@@ -57,7 +57,7 @@ async function startServer() {
   // Start Apollo Server
   await server.start();
   
-  server.applyMiddleware({ app, path: "/graphql", cors: false });
+  server.applyMiddleware({ app: app as any, path: "/graphql", cors: false });
 
   // Health check endpoint
   app.get("/health", (req, res) => {
