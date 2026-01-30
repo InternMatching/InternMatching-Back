@@ -6,6 +6,7 @@ import { connectDatabase } from "./config/database.js";
 import { typeDefs } from "./graphql/typeDefs/index.js";
 import { resolvers } from "./graphql/resolvers/index.js";
 import { createContext } from "./middleware/auth.js";
+import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 
 // Load environment variables
 dotenv.config();
@@ -25,12 +26,14 @@ async function startServer() {
     }),
   );
 
-  // Body parser
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // Body parser removed to prevent conflict with Apollo Server (stream is not readable error)
+  // app.use(express.json());
+  // app.use(express.urlencoded({ extended: true }));
 
   // Connect to MongoDB
   await connectDatabase();
+
+
 
   // Create Apollo Server
   const server = new ApolloServer({
@@ -48,6 +51,7 @@ async function startServer() {
       };
     },
     introspection: process.env.NODE_ENV !== "production",
+    plugins: [ApolloServerPluginLandingPageLocalDefault({ embed: true })],
   });
 
   // Start Apollo Server

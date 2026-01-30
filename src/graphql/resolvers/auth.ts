@@ -128,6 +128,7 @@ export const authResolvers = {
           id: user._id.toString(),
           email: user.email,
           role: user.role,
+          createdAt: user.createdAt.toISOString(),
         },
       };
     },
@@ -181,6 +182,7 @@ export const authResolvers = {
           id: user._id.toString(),
           email: user.email,
           role: user.role,
+          createdAt: user.createdAt.toISOString(),
         },
       };
     },

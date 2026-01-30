@@ -2,9 +2,7 @@ import { type Request } from "express";
 import { verifyToken } from "../utils/jwt.js";
 import { type Context, type JWTPayload } from "../types/index.js";
 
-/**
- * Extract user from JWT token in request headers
- */
+
 export const getUser = (req: Request): JWTPayload | undefined => {
   const authHeader = req.headers.authorization || "";
 

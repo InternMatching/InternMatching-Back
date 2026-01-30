@@ -115,5 +115,6 @@ export interface AuthResponse {
     id: string;
     email: string;
     role: UserRole;
+    createdAt?: string;
   };
 }
