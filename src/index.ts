@@ -8,21 +8,36 @@ import { resolvers } from "./graphql/resolvers/index.js";
 import { createContext } from "./middleware/auth.js";
 import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 
-// Load environment variables
+
 dotenv.config();
 
 const PORT = process.env.PORT || 4000;
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const FRONTEND_URLS = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) 
+  : ["http://localhost:3000", "https://intern-matching.vercel.app"];
+
+console.log("CORS Allowed Origins:", FRONTEND_URLS);
 
 async function startServer() {
-  // Create Express app
+  // Create Express a
   const app = express();
 
   // CORS configuration
   app.use(
     cors({
-      origin: FRONTEND_URL,
+      origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        if (FRONTEND_URLS.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+          callback(null, true);
+        } else {
+          console.warn(`CORS Blocked: Origin ${origin} is not in allowed list:`, FRONTEND_URLS);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       credentials: true,
+      optionsSuccessStatus: 200
     }),
   );
 
@@ -65,6 +80,8 @@ async function startServer() {
       status: "OK",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      allowedOrigins: FRONTEND_URLS,
+      nodeEnv: process.env.NODE_ENV
     });
   });
 
