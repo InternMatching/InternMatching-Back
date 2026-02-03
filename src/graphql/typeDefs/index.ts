@@ -126,5 +126,9 @@ export const typeDefs = gql`
 
     # Admin only
     verifyCompany(companyProfileId: ID!): CompanyProfile!
+
+    # Password Reset
+    requestPasswordReset(email: String!): Boolean!
+    resetPassword(token: String!, newPassword: String!): Boolean!
   }
 `;

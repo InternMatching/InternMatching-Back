@@ -2,6 +2,8 @@ import User from "../../models/User.js";
 import { generateToken } from "../../utils/jwt.js";
 import { type Context, UserRole, type AuthResponse } from "../../types/index.js";
 import { GraphQLError } from "graphql";
+import crypto from "crypto";
+import { sendEmail } from "../../utils/email.js";
 
 export interface SignupInput {
   email: string;
@@ -185,6 +187,91 @@ export const authResolvers = {
           createdAt: user.createdAt.toISOString(),
         },
       };
+    },
+
+    /**
+     * Request a password reset
+     */
+    requestPasswordReset: async (_: any, { email }: { email: string }) => {
+      const user = await User.findOne({ email: email.toLowerCase() });
+
+      if (!user) {
+        // We return true even if user not found for security reasons
+        // This prevents email enumeration
+        return true;
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+
+      // Hash token and set expiry (1 hour)
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+
+      user.resetPasswordToken = hashedToken;
+      user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+
+      await user.save({ validateBeforeSave: false });
+
+      // Create reset URL
+      const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${resetToken}`;
+
+      const message = `Forgot your password? Submit a request with your new password at: ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
+
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: "Your password reset token (valid for 1 hour)",
+          message,
+        });
+
+        return true;
+      } catch (error) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        throw new GraphQLError("There was an error sending the email. Try again later", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+      }
+    },
+
+    /**
+     * Reset password
+     */
+    resetPassword: async (
+      _: any,
+      { token, newPassword }: { token: string; newPassword: string },
+    ) => {
+      // Get hashed token
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
+      // Find user with token and check expiry
+      const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: Date.now() },
+      }).select("+password");
+
+      if (!user) {
+        throw new GraphQLError("Token is invalid or has expired", {
+          extensions: { code: "BAD_REQUEST" },
+        });
+      }
+
+      // Update password
+      user.password = newPassword;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+
+      await user.save();
+
+      return true;
     },
   },
 };

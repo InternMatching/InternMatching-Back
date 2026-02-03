@@ -35,6 +35,8 @@ export interface IUser {
   password: string;
   role: UserRole;
   createdAt: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
