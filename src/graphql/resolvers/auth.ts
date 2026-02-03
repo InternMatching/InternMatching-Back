@@ -194,7 +194,7 @@ export const authResolvers = {
      */
     requestPasswordReset: async (_: any, { email }: { email: string }) => {
       const user = await User.findOne({ email: email.toLowerCase() });
-
+      console.log(user, "email checkkkkkk");
       if (!user) {
         // We return true even if user not found for security reasons
         // This prevents email enumeration
@@ -228,13 +228,16 @@ export const authResolvers = {
         });
 
         return true;
-      } catch (error) {
+      } catch (error: any) {
+        console.error("DEBUG: Email attempted to", user.email);
+        console.error("DEBUG: Error details:", error);
+        
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save({ validateBeforeSave: false });
 
-        throw new GraphQLError("There was an error sending the email. Try again later", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        throw new GraphQLError(`BACKEND_ERROR: ${error.message || "Unknown email error"}`, {
+          extensions: { code: "INTERNAL_SERVER_ERROR", originalError: error },
         });
       }
     },
