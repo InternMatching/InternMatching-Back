@@ -262,7 +262,7 @@ export const authResolvers = {
       }).select("+password");
 
       if (!user) {
-        throw new GraphQLError("Token is invalid or has expired", {
+        throw new GraphQLError("Token  invalid or has expired", {
           extensions: { code: "BAD_REQUEST" },
         });
       }
