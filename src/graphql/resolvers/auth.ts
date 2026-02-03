@@ -236,7 +236,8 @@ export const authResolvers = {
         user.resetPasswordExpires = undefined;
         await user.save({ validateBeforeSave: false });
 
-        throw new GraphQLError("There was an error sending the email. Try again later", {
+        // Surface the specific error message to help with debugging (e.g., Resend's 450 error)
+        throw new GraphQLError(`Email Error: ${error.message || "There was an error sending the email. Try again later"}`, {
           extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
