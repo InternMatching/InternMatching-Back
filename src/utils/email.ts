@@ -6,16 +6,14 @@ export const sendEmail = async (options: {
   message: string;
 }) => {
   
-    const host = process.env.EMAIL_HOST || "smtp.mailtrap.io";
+  const host = process.env.EMAIL_HOST || "smtp.mailtrap.io";
   const port = parseInt(process.env.EMAIL_PORT || "2525");
   const user = process.env.EMAIL_USER;
-
-  console.log(`[Email] Attempting to send to ${options.email}`);
-  console.log(`[Email] Config: ${host}:${port} (User: ${user ? 'Set' : 'NOT SET'})`);
 
   const transporter = nodemailer.createTransport({
     host,
     port,
+    secure: port === 465, // Use SSL for port 465
     auth: {
       user: user,
       pass: process.env.EMAIL_PASSWORD,
