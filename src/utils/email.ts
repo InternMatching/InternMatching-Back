@@ -13,7 +13,8 @@ export const sendEmail = async (options: {
   const transporter = nodemailer.createTransport({
     host,
     port,
-    secure: port === 465, // Use SSL for port 465
+    secure: port === 465, // SSL for port 465
+    requireTLS: port === 587, // STARTTLS for port 587
     auth: {
       user: user,
       pass: process.env.EMAIL_PASSWORD,
