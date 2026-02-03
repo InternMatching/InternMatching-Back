@@ -229,7 +229,7 @@ export const authResolvers = {
 
         return true;
       } catch (error: any) {
-        console.error("DEBUG: Email attempted to", user.email);
+        console.error("DEBUG: Email attemted to", user.email);
         console.error("DEBUG: Error details:", error);
         
         user.resetPasswordToken = undefined;
