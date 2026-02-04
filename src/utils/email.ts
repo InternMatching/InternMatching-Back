@@ -6,20 +6,16 @@ export const sendEmail = async (options: {
   message: string;
 }) => {
   
-  const host = process.env.EMAIL_HOST || "smtp.mailtrap.io";
-  const port = parseInt(process.env.EMAIL_PORT || "2525");
   const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASSWORD;
 
-  console.log(`[Email] Configuring transporter: ${host}:${port}`);
+  console.log(`[Email] Configuring transporter for Gmail service...`);
 
   const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465, // SSL for port 465
-    requireTLS: port === 587, // STARTTLS for port 587
+    service: "gmail",
     auth: {
       user: user,
-      pass: process.env.EMAIL_PASSWORD,
+      pass: pass,
     },
     // Add timeouts to prevent hanging connections
     connectionTimeout: 15000, // 15 seconds
@@ -33,6 +29,16 @@ export const sendEmail = async (options: {
     logger: true,
     debug: true,
   });
+
+  // Verify connection configuration
+  try {
+    console.log("[Email] Verifying connection...");
+    await transporter.verify();
+    console.log("[Email] Server is ready to take our messages");
+  } catch (err) {
+    console.error("[Email] Verification failed:", err);
+    throw new Error(`Connection timeout or failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   const mailOptions = {
     from: `InterMatching <${process.env.EMAIL_FROM || "noreply@intermatching.com"}>`,
