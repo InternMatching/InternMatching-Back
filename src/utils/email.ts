@@ -8,43 +8,49 @@ export const sendEmail = async (options: {
   
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASSWORD;
+  const host = "smtp.gmail.com";
+  const port = 465; // Trying SSL port 465 again with IPv4 fix
 
-  console.log(`[Email] Configuring transporter: smtp.gmail.com:587 (Forcing IPv4)`);
+  console.log(`[Email] --- Diagnostic Info ---`);
+  console.log(`[Email] Target: ${host}:${port}`);
+  console.log(`[Email] User defined: ${user ? "Yes (" + user.substring(0, 3) + "...)" : "No"}`);
+  console.log(`[Email] Pass defined: ${pass ? "Yes" : "No"}`);
+  console.log(`[Email] Env: ${process.env.NODE_ENV}`);
+  console.log(`[Email] ------------------------`);
 
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // true for 465, false for other ports
+    host: host,
+    port: port,
+    secure: true, // true for 465
     auth: {
       user: user,
       pass: pass,
     },
-    // CRITICAL: Force IPv4. Render's IPv6 routing often causes timeouts.
-    // @ts-ignore - family is a valid SMTP option but sometimes missing in older type definitions
+    // CRITICAL: Force IPv4. Render's IPv6 routing is the most common cause of timeouts.
+    // @ts-ignore
     family: 4,
-    // Add timeouts to prevent hanging connections
-    connectionTimeout: 15000, // 15 seconds
-    greetingTimeout: 15000,
-    socketTimeout: 30000, // 30 seconds
+    // EXTENDED Timeouts for production reliability
+    connectionTimeout: 30000, // 30 seconds
+    greetingTimeout: 30000,
+    socketTimeout: 60000, // 60 seconds
     tls: {
       // Do not fail on invalid certs
       rejectUnauthorized: false,
-      // Ensure we use the correct server name for SNI
       servername: "smtp.gmail.com"
     },
-    // Additional debug logging
     logger: true,
     debug: true,
   } as any);
 
   // Verify connection configuration
   try {
-    console.log("[Email] Verifying connection (IPv4-only)...");
+    console.log("[Email] Verifying connection (SSL + IPv4)...");
     await transporter.verify();
-    console.log("[Email] SMTP Server is ready");
+    console.log("[Email] SUCCESS: SMTP Server is ready");
   } catch (err) {
-    console.error("[Email] Verification failed:", err);
-    throw new Error(`Connection timeout: Make sure EMAIL_PORT=587 is set in Render. Error: ${err instanceof Error ? err.message : String(err)}`);
+    console.error("[Email] FAILED: Connection timed out.");
+    console.error("[Email] Technical details:", err);
+    throw new Error(`SMTP Connection Timeout. This usually means Render's IP is being throttled or port 465/587 is blocked. Error: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   const mailOptions = {
