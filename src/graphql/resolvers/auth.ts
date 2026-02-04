@@ -218,12 +218,11 @@ export const authResolvers = {
 
       const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${resetToken}`;
 
-      const message = `Forgot your password? Submit a request with your new password at: ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
-
+      const message = `Нууц үгээ сэргээхийн тулд дараах линкээр орж шинээр нууц үг оруулна уу: ${resetUrl}.\nХэрэв та нууц үгээ сэргээх хүсэлт илгээгээгүй бол spam folder-оо шалгаарай!`;
       try {
         await sendEmail({
           email: user.email,
-          subject: "Your password reset token (valid for 1 hour)",
+          subject: "Нууц үг сэргээх хүсэлт",
           message,
         });
 
