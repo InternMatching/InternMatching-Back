@@ -216,7 +216,6 @@ export const authResolvers = {
 
       await user.save({ validateBeforeSave: false });
 
-      // Create reset URL
       const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${resetToken}`;
 
       const message = `Forgot your password? Submit a request with your new password at: ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
