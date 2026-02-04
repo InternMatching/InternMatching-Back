@@ -10,6 +10,8 @@ export const sendEmail = async (options: {
   const port = parseInt(process.env.EMAIL_PORT || "2525");
   const user = process.env.EMAIL_USER;
 
+  console.log(`[Email] Configuring transporter: ${host}:${port}`);
+
   const transporter = nodemailer.createTransport({
     host,
     port,
@@ -19,6 +21,17 @@ export const sendEmail = async (options: {
       user: user,
       pass: process.env.EMAIL_PASSWORD,
     },
+    // Add timeouts to prevent hanging connections
+    connectionTimeout: 15000, // 15 seconds
+    greetingTimeout: 15000,
+    socketTimeout: 30000, // 30 seconds
+    tls: {
+      // Do not fail on invalid certs (helpful for cloud proxies)
+      rejectUnauthorized: false,
+    },
+    // Additional debug logging
+    logger: true,
+    debug: true,
   });
 
   const mailOptions = {
