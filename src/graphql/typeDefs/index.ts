@@ -13,6 +13,19 @@ export const typeDefs = gql`
     junior
   }
 
+  enum ApplicationStatus {
+    applied
+    reviewing
+    interview_scheduled
+    accepted
+    rejected
+  }
+
+  enum JobStatus {
+    open
+    closed
+  }
+
   # Types
   type User {
     id: ID!
@@ -58,6 +71,42 @@ export const typeDefs = gql`
     updatedAt: String!
   }
 
+  type Job {
+    id: ID!
+    companyProfileId: ID!
+    company: CompanyProfile
+    title: String!
+    description: String
+    type: ExperienceLevel!
+    requiredSkills: [String!]!
+    location: String
+    salaryRange: String
+    status: JobStatus!
+    postedAt: String!
+  }
+
+  type Application {
+    id: ID!
+    jobId: ID!
+    job: Job
+    studentProfileId: ID!
+    student: StudentProfile
+    status: ApplicationStatus!
+    matchScore: Float!
+    coverLetter: String
+    appliedAt: String!
+  }
+
+  type AdminStats {
+    totalUsers: Int!
+    totalStudents: Int!
+    totalCompanies: Int!
+    activeJobs: Int!
+    totalApplications: Int!
+    pendingVerifications: Int!
+    newUsersToday: Int!
+  }
+
   # Input Types
   input SignupInput {
     email: String!
@@ -95,11 +144,22 @@ export const typeDefs = gql`
     website: String
   }
 
+  input JobInput {
+    title: String!
+    description: String
+    type: ExperienceLevel!
+    requiredSkills: [String!]
+    location: String
+    salaryRange: String
+    status: JobStatus
+  }
+
   # Queries
   type Query {
     # Auth & User
     me: User
     getUser(id: ID!): User
+    getAllUsers: [User!]!
 
     # Student Profile
     getStudentProfile(userId: ID): StudentProfile
@@ -108,6 +168,17 @@ export const typeDefs = gql`
     # Company Profile
     getCompanyProfile(userId: ID): CompanyProfile
     getAllCompanyProfiles(verifiedOnly: Boolean): [CompanyProfile!]!
+
+    # Jobs
+    getJob(id: ID!): Job
+    getAllJobs(companyProfileId: ID, status: JobStatus): [Job!]!
+
+    # Applications
+    getApplication(id: ID!): Application
+    getAllApplications(jobId: ID, studentProfileId: ID): [Application!]!
+
+    # Admin
+    adminStats: AdminStats!
   }
 
   # Mutations
@@ -116,6 +187,9 @@ export const typeDefs = gql`
     signup(input: SignupInput!): AuthPayload!
     login(input: LoginInput!): AuthPayload!
 
+    # User Management
+    deleteUser(userId: ID!): Boolean!
+
     # Student Profile
     createStudentProfile(input: StudentProfileInput!): StudentProfile!
     updateStudentProfile(input: StudentProfileInput!): StudentProfile!
@@ -123,6 +197,15 @@ export const typeDefs = gql`
     # Company Profile
     createCompanyProfile(input: CompanyProfileInput!): CompanyProfile!
     updateCompanyProfile(input: CompanyProfileInput!): CompanyProfile!
+
+    # Jobs
+    createJob(input: JobInput!): Job!
+    updateJob(id: ID!, input: JobInput!): Job!
+    deleteJob(id: ID!): Boolean!
+
+    # Applications
+    createApplication(jobId: ID!, coverLetter: String): Application!
+    updateApplicationStatus(id: ID!, status: ApplicationStatus!): Application!
 
     # Admin only
     verifyCompany(companyProfileId: ID!): CompanyProfile!

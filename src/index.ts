@@ -23,29 +23,30 @@ async function startServer() {
   const app = express();
 
   // CORS configuration
-  app.use(
-    cors({
-      origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        
-        if (FRONTEND_URLS.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-          callback(null, true);
-        } else {
-          console.warn(`CORS Blocked: Origin ${origin} is not in allowed list:`, FRONTEND_URLS);
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      credentials: true,
-      optionsSuccessStatus: 200
-    }),
-  );
+  const corsOptions: cors.CorsOptions = {
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
+      // Always allow localhost:3000 for development convenience
+      const allowedOrigins = [...FRONTEND_URLS];
+      if (allowedOrigins.indexOf("http://localhost:3000") === -1) {
+        allowedOrigins.push("http://localhost:3000");
+      }
 
-  // Body parser removed to prevent conflict with Apollo Server (stream is not readable error)
-  // app.use(express.json());
-  // app.use(express.urlencoded({ extended: true }));
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        console.warn(`CORS Blocked: Origin ${origin} is not in allowed list:`, allowedOrigins);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200
+  };
 
-  // Connect to MongoDB
+  app.use(cors(corsOptions));
+
   await connectDatabase();
 
 
