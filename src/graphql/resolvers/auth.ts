@@ -50,7 +50,7 @@ export const authResolvers = {
     getUser: async (_: any, { id }: { id: string }, context: Context) => {
       if (!context.user) {
         throw new GraphQLError("Not authenticated", {
-          extensions: { code: "UNAUTHENTICATED" },
+          extensions: { code: "UNAUTHENICATED" },
         });
       }
 

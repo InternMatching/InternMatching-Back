@@ -26,6 +26,11 @@ export const typeDefs = gql`
     closed
   }
 
+  enum StatsPeriod {
+    DAILY
+    WEEKLY
+  }
+
   # Types
   type User {
     id: ID!
@@ -97,6 +102,20 @@ export const typeDefs = gql`
     appliedAt: String!
   }
 
+  type GrowthData {
+    name: String!
+    users: Int!
+    apps: Int!
+  }
+
+  type RecentActivity {
+    id: ID!
+    user: String!
+    action: String!
+    timestamp: String!
+    type: String!
+  }
+
   type AdminStats {
     totalUsers: Int!
     totalStudents: Int!
@@ -105,6 +124,8 @@ export const typeDefs = gql`
     totalApplications: Int!
     pendingVerifications: Int!
     newUsersToday: Int!
+    growthData: [GrowthData!]!
+    recentActivities: [RecentActivity!]!
   }
 
   # Input Types
@@ -178,7 +199,7 @@ export const typeDefs = gql`
     getAllApplications(jobId: ID, studentProfileId: ID): [Application!]!
 
     # Admin
-    adminStats: AdminStats!
+    adminStats(period: StatsPeriod): AdminStats!
   }
 
   # Mutations

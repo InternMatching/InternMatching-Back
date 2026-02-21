@@ -28,6 +28,12 @@ export enum JobStatus {
   CLOSED = "closed",
 }
 
+// Stats period
+export enum StatsPeriod {
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY",
+}
+
 // User interface
 export interface IUser {
   _id: Types.ObjectId;
@@ -55,6 +61,7 @@ export interface IStudentProfile {
     degree: string;
     year: number;
   }[];
+  createdAt: Date;
   updatedAt: Date;
 }
 
@@ -69,6 +76,7 @@ export interface ICompanyProfile {
   logoUrl?: string;
   isVerified: boolean;
   website?: string;
+  createdAt: Date;
   updatedAt: Date;
 }
 
