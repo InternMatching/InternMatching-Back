@@ -40,6 +40,9 @@ export interface IUser {
   email: string;
   password: string;
   role: UserRole;
+  phoneNumber?: string;
+  themeColor?: string;
+  emailNotifications?: boolean;
   createdAt: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;

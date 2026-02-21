@@ -11,6 +11,11 @@ export const adminResolvers = {
       return users.map(user => ({
         ...user.toObject(),
         id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        phoneNumber: user.phoneNumber,
+        themeColor: user.themeColor,
+        emailNotifications: user.emailNotifications,
         createdAt: user.createdAt.toISOString()
       }));
     },
@@ -184,6 +189,26 @@ export const adminResolvers = {
       // 2. Delete user
       await User.deleteOne({ _id: userId });
       return true;
+    },
+
+    updateSettings: async (_: any, { input }: { input: any }, context: Context) => {
+      const user = requireRole(context, [UserRole.ADMIN, UserRole.COMPANY, UserRole.STUDENT]);
+      
+      const updatedUser = await User.findByIdAndUpdate(
+        user.userId,
+        { $set: input },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedUser) {
+        throw new GraphQLError("User not found", { extensions: { code: "NOT_FOUND" } });
+      }
+
+      return {
+        ...updatedUser.toObject(),
+        id: updatedUser._id.toString(),
+        createdAt: updatedUser.createdAt.toISOString()
+      };
     }
   }
 };
