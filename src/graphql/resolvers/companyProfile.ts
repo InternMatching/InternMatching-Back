@@ -1,4 +1,5 @@
 import CompanyProfile from "../../models/CompanyProfile.js";
+import User from "../../models/User.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole } from "../../types/index.js";
 import { GraphQLError } from "graphql";
@@ -65,21 +66,42 @@ export const companyProfileResolvers = {
     ) => {
       requireAuth(context);
 
+      // 1. Get all users with role COMPANY
+      const companyUsers = await User.find({ role: UserRole.COMPANY });
+
+      // 2. Get all existing profiles
       const query = verifiedOnly ? { isVerified: true } : {};
       const profiles = await CompanyProfile.find(query);
 
-      return profiles.map((profile: any) => ({
-        id: profile._id.toString(),
-        userId: profile.userId.toString(),
-        companyName: profile.companyName,
-        description: profile.description,
-        industry: profile.industry,
-        location: profile.location,
-        logoUrl: profile.logoUrl,
-        isVerified: profile.isVerified,
-        website: profile.website,
-        updatedAt: profile.updatedAt.toISOString(),
-      }));
+      // 3. Map company users to their profiles (or create a skeleton if profile missing)
+      return companyUsers.map((user) => {
+        const profile = profiles.find(p => p.userId.toString() === user._id.toString());
+        
+        if (profile) {
+          return {
+            id: profile._id.toString(),
+            userId: profile.userId.toString(),
+            companyName: profile.companyName,
+            description: profile.description,
+            industry: profile.industry,
+            location: profile.location,
+            logoUrl: profile.logoUrl,
+            isVerified: profile.isVerified,
+            website: profile.website,
+            updatedAt: profile.updatedAt.toISOString(),
+          };
+        }
+
+        // Return a "pending" profile for companies that haven't set one up yet
+        return {
+          id: user._id.toString(), // Use userId as temporary id
+          userId: user._id.toString(),
+          companyName: user.email.split('@')[0], // Fallback name
+          description: "Бүртгэл дутуу",
+          isVerified: false,
+          updatedAt: user.createdAt.toISOString(),
+        };
+      }).filter(comp => !verifiedOnly || comp.isVerified);
     },
   },
 
@@ -180,14 +202,38 @@ export const companyProfileResolvers = {
     ) => {
       requireRole(context, [UserRole.ADMIN]);
 
-      const profile = await CompanyProfile.findByIdAndUpdate(
+      // 1. Try to find and update by profile ID
+      let profile = await CompanyProfile.findByIdAndUpdate(
         companyProfileId,
         { isVerified: true, updatedAt: new Date() },
         { new: true },
       );
 
+      // 2. If not found, check if companyProfileId is actually a user ID
       if (!profile) {
-        throw new GraphQLError("Company profile not found", {
+        const user = await User.findById(companyProfileId);
+        if (user && user.role === UserRole.COMPANY) {
+          // Check if profile exists for this user ID (maybe it has a different ID)
+          profile = await CompanyProfile.findOneAndUpdate(
+            { userId: user._id },
+            { isVerified: true, updatedAt: new Date() },
+            { new: true },
+          );
+
+          if (!profile) {
+            // Create a skeleton profile
+            profile = await CompanyProfile.create({
+              userId: user._id,
+              companyName: user.email.split("@")[0],
+              isVerified: true,
+              updatedAt: new Date(),
+            });
+          }
+        }
+      }
+
+      if (!profile) {
+        throw new GraphQLError("Company profile or user not found", {
           extensions: { code: "NOT_FOUND" },
         });
       }

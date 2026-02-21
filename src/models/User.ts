@@ -27,6 +27,18 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(UserRole),
       required: [true, "User role is required"],
     },
+    phoneNumber: {
+      type: String,
+      trim: true,
+    },
+    themeColor: {
+      type: String,
+      default: "#3b82f6", // Default blue
+    },
+    emailNotifications: {
+      type: Boolean,
+      default: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

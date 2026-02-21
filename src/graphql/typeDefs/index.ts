@@ -35,7 +35,10 @@ export const typeDefs = gql`
   type User {
     id: ID!
     email: String!
-    role: UserRole!
+    role: String!
+    phoneNumber: String
+    themeColor: String
+    emailNotifications: Boolean
     createdAt: String!
   }
 
@@ -175,6 +178,13 @@ export const typeDefs = gql`
     status: JobStatus
   }
 
+  input UpdateSettingsInput {
+    email: String
+    phoneNumber: String
+    themeColor: String
+    emailNotifications: Boolean
+  }
+
   # Queries
   type Query {
     # Auth & User
@@ -230,6 +240,7 @@ export const typeDefs = gql`
 
     # Admin only
     verifyCompany(companyProfileId: ID!): CompanyProfile!
+    updateSettings(input: UpdateSettingsInput!): User!
 
     # Password Reset
     requestPasswordReset(email: String!): Boolean!
