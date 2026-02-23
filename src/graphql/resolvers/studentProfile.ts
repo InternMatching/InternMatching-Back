@@ -136,21 +136,23 @@ export const studentProfileResolvers = {
     ) => {
       const user = requireRole(context, [UserRole.STUDENT]);
 
-      // Find and update profile
+      // Find and update profile (acting as upsert)
       const profile = await StudentProfile.findOneAndUpdate(
         { userId: user.userId },
         {
-          ...input,
-          updatedAt: new Date(),
+          $set: {
+            ...input,
+            updatedAt: new Date(),
+          },
         },
-        { new: true, runValidators: true },
+        { new: true, runValidators: true, upsert: true },
       );
 
       if (!profile) {
         throw new GraphQLError(
-          "Student profile not found. Please create one first.",
+          "Could not update or create student profile.",
           {
-            extensions: { code: "NOT_FOUND" },
+            extensions: { code: "SERVER_ERROR" },
           },
         );
       }

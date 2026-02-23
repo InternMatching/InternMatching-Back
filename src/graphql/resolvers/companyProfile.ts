@@ -15,10 +15,7 @@ export interface CompanyProfileInput {
 
 export const companyProfileResolvers = {
   Query: {
-    /**
-     * Get company profile by userId
-     * If no userId provided, return current user's profile
-     */
+
     getCompanyProfile: async (
       _: any,
       { userId }: { userId?: string },
@@ -26,10 +23,8 @@ export const companyProfileResolvers = {
     ) => {
       const user = requireAuth(context);
 
-      // If no userId provided, use current user's ID
       const targetUserId = userId || user.userId;
 
-      // Companies can only view their own profile unless they're admin
       if (user.role === UserRole.COMPANY && targetUserId !== user.userId) {
         throw new GraphQLError("Insufficient permissions", {
           extensions: { code: "FORBIDDEN" },
@@ -149,31 +144,33 @@ export const companyProfileResolvers = {
       };
     },
 
-    /**
-     * Update company profile
-     */
     updateCompanyProfile: async (
       _: any,
       { input }: { input: CompanyProfileInput },
       context: Context,
     ) => {
       const user = requireRole(context, [UserRole.COMPANY]);
+      console.log(`Updating/Creating profile for user: ${user.userId}`);
 
-      // Find and update profile
       const profile = await CompanyProfile.findOneAndUpdate(
         { userId: user.userId },
         {
-          ...input,
-          updatedAt: new Date(),
+          $set: {
+            ...input,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            isVerified: false,
+          }
         },
-        { new: true, runValidators: true },
+        { new: true, runValidators: true, upsert: true },
       );
 
       if (!profile) {
         throw new GraphQLError(
-          "Company profile not found. Please create one first.",
+          "Could not update or create company profile.",
           {
-            extensions: { code: "NOT_FOUND" },
+            extensions: { code: "SERVER_ERROR" },
           },
         );
       }
