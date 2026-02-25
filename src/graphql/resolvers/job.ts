@@ -41,7 +41,6 @@ export const jobResolvers = {
       { companyProfileId, status }: { companyProfileId?: string; status?: JobStatus },
       context: Context
     ) => {
-      requireAuth(context);
       const query: any = {};
       if (companyProfileId) query.companyProfileId = companyProfileId;
       if (status) query.status = status;
