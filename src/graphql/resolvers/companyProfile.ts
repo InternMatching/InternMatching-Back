@@ -11,6 +11,9 @@ export interface CompanyProfileInput {
   location?: string;
   logoUrl?: string;
   website?: string;
+  foundedYear?: number;
+  employeeCount?: number;
+  slogan?: string;
 }
 
 export const companyProfileResolvers = {
@@ -47,6 +50,9 @@ export const companyProfileResolvers = {
         logoUrl: profile.logoUrl,
         isVerified: profile.isVerified,
         website: profile.website,
+        foundedYear: profile.foundedYear,
+        employeeCount: profile.employeeCount,
+        slogan: profile.slogan,
         updatedAt: profile.updatedAt.toISOString(),
       };
     },
@@ -83,6 +89,9 @@ export const companyProfileResolvers = {
             logoUrl: profile.logoUrl,
             isVerified: profile.isVerified,
             website: profile.website,
+            foundedYear: profile.foundedYear,
+            employeeCount: profile.employeeCount,
+            slogan: profile.slogan,
             updatedAt: profile.updatedAt.toISOString(),
           };
         }
@@ -140,6 +149,9 @@ export const companyProfileResolvers = {
         logoUrl: profile.logoUrl,
         isVerified: profile.isVerified,
         website: profile.website,
+        foundedYear: profile.foundedYear,
+        employeeCount: profile.employeeCount,
+        slogan: profile.slogan,
         updatedAt: profile.updatedAt.toISOString(),
       };
     },
@@ -185,6 +197,9 @@ export const companyProfileResolvers = {
         logoUrl: profile.logoUrl,
         isVerified: profile.isVerified,
         website: profile.website,
+        foundedYear: profile.foundedYear,
+        employeeCount: profile.employeeCount,
+        slogan: profile.slogan,
         updatedAt: profile.updatedAt.toISOString(),
       };
     },
@@ -245,6 +260,9 @@ export const companyProfileResolvers = {
         logoUrl: profile.logoUrl,
         isVerified: profile.isVerified,
         website: profile.website,
+        foundedYear: profile.foundedYear,
+        employeeCount: profile.employeeCount,
+        slogan: profile.slogan,
         updatedAt: profile.updatedAt.toISOString(),
       };
     },

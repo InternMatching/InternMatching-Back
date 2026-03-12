@@ -76,6 +76,9 @@ export const typeDefs = gql`
     logoUrl: String
     isVerified: Boolean!
     website: String
+    foundedYear: Int
+    employeeCount: Int
+    slogan: String
     updatedAt: String!
   }
 
@@ -89,6 +92,10 @@ export const typeDefs = gql`
     requiredSkills: [String!]!
     location: String
     salaryRange: String
+    responsibilities: String
+    requirements: String
+    additionalInfo: String
+    deadline: String
     status: JobStatus!
     postedAt: String!
   }
@@ -166,6 +173,9 @@ export const typeDefs = gql`
     location: String
     logoUrl: String
     website: String
+    foundedYear: Int
+    employeeCount: Int
+    slogan: String
   }
 
   input JobInput {
@@ -175,6 +185,10 @@ export const typeDefs = gql`
     requiredSkills: [String!]
     location: String
     salaryRange: String
+    responsibilities: String
+    requirements: String
+    additionalInfo: String
+    deadline: String
     status: JobStatus
   }
 

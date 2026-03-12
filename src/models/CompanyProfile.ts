@@ -38,6 +38,16 @@ const companyProfileSchema = new Schema<ICompanyProfile>(
       type: String,
       trim: true,
     },
+    foundedYear: {
+      type: Number,
+    },
+    employeeCount: {
+      type: Number,
+    },
+    slogan: {
+      type: String,
+      trim: true,
+    },
     updatedAt: {
       type: Date,
       default: Date.now,
@@ -48,7 +58,6 @@ const companyProfileSchema = new Schema<ICompanyProfile>(
   },
 );
 
-// Create indexes
 companyProfileSchema.index({ userId: 1 });
 companyProfileSchema.index({ isVerified: 1 });
 companyProfileSchema.index({ companyName: 1 });

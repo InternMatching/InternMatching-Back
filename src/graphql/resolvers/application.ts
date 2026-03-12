@@ -36,12 +36,29 @@ export const applicationResolvers = {
       if (jobId) query.jobId = jobId;
       if (studentProfileId) query.studentProfileId = studentProfileId;
 
-      // Restrict access for non-admins
+      // Restrict access
       const user = context.user!;
       if (user.role === UserRole.STUDENT) {
         const studentProfile = await StudentProfile.findOne({ userId: user.userId });
         if (!studentProfile) throw new GraphQLError("Profile not found");
         query.studentProfileId = studentProfile._id;
+      } else if (user.role === UserRole.COMPANY) {
+        const companyProfile = await CompanyProfile.findOne({ userId: user.userId });
+        if (!companyProfile) throw new GraphQLError("Company profile not found");
+        
+        // If jobId is provided, verify it belongs to this company
+        if (jobId) {
+          const job = await Job.findById(jobId);
+          if (!job || job.companyProfileId.toString() !== companyProfile._id.toString()) {
+            throw new GraphQLError("Unauthorized access to this job's applications");
+          }
+          query.jobId = jobId;
+        } else {
+          // Otherwise, only show applications for jobs belonging to this company
+          const companyJobs = await Job.find({ companyProfileId: companyProfile._id });
+          const jobIds = companyJobs.map(job => job._id);
+          query.jobId = { $in: jobIds };
+        }
       }
 
       const applications = await Application.find(query).sort({ appliedAt: -1 });
@@ -63,6 +80,7 @@ export const applicationResolvers = {
         ...job.toObject(),
         id: job._id.toString(),
         companyProfileId: job.companyProfileId.toString(),
+        deadline: job.deadline?.toISOString(),
         postedAt: job.postedAt.toISOString(),
       };
     },

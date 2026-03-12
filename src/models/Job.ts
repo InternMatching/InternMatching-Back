@@ -9,6 +9,10 @@ export interface IJob extends Document {
   requiredSkills: string[];
   location?: string;
   salaryRange?: string;
+  responsibilities?: string;
+  requirements?: string;
+  additionalInfo?: string;
+  deadline?: Date;
   status: JobStatus;
   postedAt: Date;
   createdAt: Date;
@@ -46,6 +50,18 @@ const JobSchema: Schema = new Schema(
     salaryRange: {
       type: String,
       trim: true,
+    },
+    responsibilities: {
+      type: String,
+    },
+    requirements: {
+      type: String,
+    },
+    additionalInfo: {
+      type: String,
+    },
+    deadline: {
+      type: Date,
     },
     status: {
       type: String,

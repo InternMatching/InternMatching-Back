@@ -15,6 +15,10 @@ interface JobInput {
   requiredSkills?: string[];
   location?: string;
   salaryRange?: string;
+  responsibilities?: string;
+  requirements?: string;
+  additionalInfo?: string;
+  deadline?: string;
   status?: JobStatus;
 }
 
@@ -32,6 +36,7 @@ export const jobResolvers = {
         ...job.toObject(),
         id: job._id.toString(),
         companyProfileId: job.companyProfileId.toString(),
+        deadline: job.deadline?.toISOString(),
         postedAt: job.postedAt.toISOString(),
       };
     },
@@ -50,6 +55,7 @@ export const jobResolvers = {
         ...job.toObject(),
         id: job._id.toString(),
         companyProfileId: job.companyProfileId.toString(),
+        deadline: job.deadline?.toISOString(),
         postedAt: job.postedAt.toISOString(),
       }));
     },
@@ -95,6 +101,7 @@ export const jobResolvers = {
         ...job.toObject(),
         id: job._id.toString(),
         companyProfileId: job.companyProfileId.toString(),
+        deadline: job.deadline?.toISOString(),
         postedAt: job.postedAt.toISOString(),
       };
     },
@@ -123,6 +130,7 @@ export const jobResolvers = {
         ...updatedJob!.toObject(),
         id: updatedJob!._id.toString(),
         companyProfileId: updatedJob!.companyProfileId.toString(),
+        deadline: updatedJob!.deadline?.toISOString(),
         postedAt: updatedJob!.postedAt.toISOString(),
       };
     },

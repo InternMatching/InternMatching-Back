@@ -79,6 +79,9 @@ export interface ICompanyProfile {
   logoUrl?: string;
   isVerified: boolean;
   website?: string;
+  foundedYear?: number;
+  employeeCount?: number;
+  slogan?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,6 +96,10 @@ export interface IJob {
   requiredSkills: string[];
   location?: string;
   salaryRange?: string;
+  responsibilities?: string;
+  requirements?: string;
+  additionalInfo?: string;
+  deadline?: Date;
   status: JobStatus;
   postedAt: Date;
 }
