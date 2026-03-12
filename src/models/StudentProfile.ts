@@ -25,6 +25,10 @@ const studentProfileSchema = new Schema<IStudentProfile>(
       type: String,
       trim: true,
     },
+    profilePictureUrl: {
+      type: String,
+      trim: true,
+    },
     bio: {
       type: String,
       maxlength: [1000, "Bio cannot exceed 1000 characters"],

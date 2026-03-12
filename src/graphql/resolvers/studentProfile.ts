@@ -2,12 +2,14 @@ import StudentProfile from "../../models/StudentProfile.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole, ExperienceLevel } from "../../types/index.js";
 import { GraphQLError } from "graphql";
+import { uploadToCloudinary } from "../../utils/cloudinary.js";
 
 export interface StudentProfileInput {
   firstName?: string;
   lastName?: string;
   skills?: string[];
   cvUrl?: string;
+  profilePictureUrl?: string;
   bio?: string;
   experienceLevel?: ExperienceLevel;
   education?: {
@@ -53,6 +55,7 @@ export const studentProfileResolvers = {
         lastName: profile.lastName,
         skills: profile.skills,
         cvUrl: profile.cvUrl,
+        profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
         education: profile.education,
@@ -75,6 +78,7 @@ export const studentProfileResolvers = {
         lastName: profile.lastName,
         skills: profile.skills,
         cvUrl: profile.cvUrl,
+        profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
         education: profile.education,
@@ -164,6 +168,52 @@ export const studentProfileResolvers = {
         lastName: profile.lastName,
         skills: profile.skills,
         cvUrl: profile.cvUrl,
+        profilePictureUrl: profile.profilePictureUrl,
+        bio: profile.bio,
+        experienceLevel: profile.experienceLevel,
+        education: profile.education,
+        updatedAt: profile.updatedAt.toISOString(),
+      };
+    },
+
+    /**
+     * Upload student profile picture
+     */
+    uploadStudentProfilePicture: async (
+      _: any,
+      { base64Image }: { base64Image: string },
+      context: Context,
+    ) => {
+      const user = requireRole(context, [UserRole.STUDENT]);
+
+      // Upload to Cloudinary — use userId as stable public_id so re-uploads overwrite
+      const profilePictureUrl = await uploadToCloudinary(
+        base64Image,
+        "internmatch/profiles",
+        `profile_${user.userId}`,
+      );
+
+      // Save URL to the student profile
+      const profile = await StudentProfile.findOneAndUpdate(
+        { userId: user.userId },
+        { $set: { profilePictureUrl, updatedAt: new Date() } },
+        { new: true, upsert: true },
+      );
+
+      if (!profile) {
+        throw new GraphQLError("Student profile not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      return {
+        id: profile._id.toString(),
+        userId: profile.userId.toString(),
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        skills: profile.skills,
+        cvUrl: profile.cvUrl,
+        profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
         education: profile.education,
