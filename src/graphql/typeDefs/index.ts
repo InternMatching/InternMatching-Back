@@ -54,6 +54,7 @@ export const typeDefs = gql`
     lastName: String
     skills: [String!]!
     cvUrl: String
+    profilePictureUrl: String
     bio: String
     experienceLevel: ExperienceLevel
     education: [Education!]
@@ -155,6 +156,7 @@ export const typeDefs = gql`
     lastName: String
     skills: [String!]
     cvUrl: String
+    profilePictureUrl: String
     bio: String
     experienceLevel: ExperienceLevel
     education: [EducationInput!]
@@ -255,6 +257,8 @@ export const typeDefs = gql`
     # Admin only
     verifyCompany(companyProfileId: ID!): CompanyProfile!
     updateSettings(input: UpdateSettingsInput!): User!
+    uploadCompanyLogo(base64Image: String!): CompanyProfile!
+    uploadStudentProfilePicture(base64Image: String!): StudentProfile!
 
     # Password Reset
     requestPasswordReset(email: String!): Boolean!

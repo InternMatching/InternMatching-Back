@@ -3,6 +3,7 @@ import User from "../../models/User.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole } from "../../types/index.js";
 import { GraphQLError } from "graphql";
+import { uploadToCloudinary } from "../../utils/cloudinary.js";
 
 export interface CompanyProfileInput {
   companyName: string;
@@ -246,6 +247,50 @@ export const companyProfileResolvers = {
 
       if (!profile) {
         throw new GraphQLError("Company profile or user not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      return {
+        id: profile._id.toString(),
+        userId: profile.userId.toString(),
+        companyName: profile.companyName,
+        description: profile.description,
+        industry: profile.industry,
+        location: profile.location,
+        logoUrl: profile.logoUrl,
+        isVerified: profile.isVerified,
+        website: profile.website,
+        foundedYear: profile.foundedYear,
+        employeeCount: profile.employeeCount,
+        slogan: profile.slogan,
+        updatedAt: profile.updatedAt.toISOString(),
+      };
+    },
+
+    uploadCompanyLogo: async (
+      _: any,
+      { base64Image }: { base64Image: string },
+      context: Context,
+    ) => {
+      const user = requireRole(context, [UserRole.COMPANY]);
+
+      // Upload to Cloudinary — use userId as stable public_id so re-uploads overwrite
+      const logoUrl = await uploadToCloudinary(
+        base64Image,
+        "internmatch/logos",
+        `logo_${user.userId}`,
+      );
+
+      // Save URL to the company profile
+      const profile = await CompanyProfile.findOneAndUpdate(
+        { userId: user.userId },
+        { $set: { logoUrl, updatedAt: new Date() } },
+        { new: true, upsert: true },
+      );
+
+      if (!profile) {
+        throw new GraphQLError("Company profile not found", {
           extensions: { code: "NOT_FOUND" },
         });
       }

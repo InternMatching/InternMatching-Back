@@ -57,6 +57,7 @@ export interface IStudentProfile {
   lastName?: string;
   skills: string[];
   cvUrl?: string;
+  profilePictureUrl?: string;
   bio?: string;
   experienceLevel?: ExperienceLevel;
   education?: {
