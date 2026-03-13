@@ -10,7 +10,6 @@ export const typeDefs = gql`
 
   enum ExperienceLevel {
     intern
-    junior
   }
 
   enum ApplicationStatus {
@@ -151,6 +150,16 @@ export const typeDefs = gql`
     password: String!
   }
 
+  input SocialLoginInput {
+    email: String!
+    socialId: String!
+    provider: String!
+    role: UserRole
+    firstName: String
+    lastName: String
+    profilePictureUrl: String
+  }
+
   input StudentProfileInput {
     firstName: String
     lastName: String
@@ -233,6 +242,8 @@ export const typeDefs = gql`
     # Authentication
     signup(input: SignupInput!): AuthPayload!
     login(input: LoginInput!): AuthPayload!
+    socialLogin(input: SocialLoginInput!): AuthPayload!
+    githubLogin(code: String!, role: UserRole): AuthPayload!
 
     # User Management
     deleteUser(userId: ID!): Boolean!
