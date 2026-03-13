@@ -18,9 +18,18 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
       select: false, // Don't include password in queries by default
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     role: {
       type: String,
@@ -59,14 +68,14 @@ const userSchema = new Schema<IUser>(
 
 // Hash password before saving
 userSchema.pre("save", async function (next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified("password")) {
+  // Only hash the password if it exists and has been modified (or is new)
+  if (!this.password || !this.isModified("password")) {
     return next();
   }
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password as string, salt);
     next();
   } catch (error: any) {
     next(error);
@@ -77,6 +86,7 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

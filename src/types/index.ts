@@ -10,7 +10,6 @@ export enum UserRole {
 // Experience levels
 export enum ExperienceLevel {
   INTERN = "intern",
-  JUNIOR = "junior",
 }
 
 // Application status
@@ -38,7 +37,9 @@ export enum StatsPeriod {
 export interface IUser {
   _id: Types.ObjectId;
   email: string;
-  password: string;
+  password?: string;
+  googleId?: string;
+  githubId?: string;
   role: UserRole;
   phoneNumber?: string;
   themeColor?: string;

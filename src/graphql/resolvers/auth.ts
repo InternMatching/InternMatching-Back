@@ -242,6 +242,158 @@ export const authResolvers = {
     },
 
     /**
+     * Social login (Google, GitHub)
+     */
+    socialLogin: async (
+      _: any,
+      { input }: { input: any },
+    ): Promise<AuthResponse> => {
+      const { email, socialId, provider, role, firstName, lastName, profilePictureUrl } = input;
+
+      // Find user by email
+      let user = await User.findOne({ email: email.toLowerCase() });
+
+      if (!user) {
+        // Create new social user
+        user = await User.create({
+          email: email.toLowerCase(),
+          role: role || UserRole.STUDENT,
+          googleId: provider === "google" ? socialId : undefined,
+          githubId: provider === "github" ? socialId : undefined,
+        });
+
+        // If it's a student, create an initial profile
+        if (user.role === UserRole.STUDENT) {
+          const { StudentProfile } = await import("../../models/index.js");
+          await StudentProfile.create({
+            userId: user._id,
+            firstName: firstName || "",
+            lastName: lastName || "",
+            profilePictureUrl: profilePictureUrl || "",
+            skills: [],
+          });
+        }
+      } else {
+        // If user exists, link social ID if not already linked
+        let updated = false;
+        if (provider === "google" && !user.googleId) {
+          user.googleId = socialId;
+          updated = true;
+        } else if (provider === "github" && !user.githubId) {
+          user.githubId = socialId;
+          updated = true;
+        }
+
+        if (updated) {
+          await user.save({ validateBeforeSave: false });
+        }
+      }
+
+      // Generate JWT token
+      const token = generateToken({
+        userId: user._id.toString(),
+        email: user.email,
+        role: user.role,
+      });
+
+      return {
+        token,
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt.toISOString(),
+        },
+      };
+    },
+
+    /**
+     * GitHub OAuth login
+     */
+    githubLogin: async (
+      _: any,
+      { code, role }: { code: string; role?: UserRole },
+    ): Promise<AuthResponse> => {
+      // 1. Exchange code for access token
+      const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (tokenData.error) {
+        throw new GraphQLError(`GitHub Auth Error: ${tokenData.error_description}`, {
+          extensions: { code: "BAD_REQUEST" },
+        });
+      }
+
+      // 2. Fetch user profile
+      const userRes = await fetch("https://api.github.com/user", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      const githubUser = await userRes.json();
+
+      // 3. Fetch user email (GitHub might not return it in the main profile)
+      const emailRes = await fetch("https://api.github.com/user/emails", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      const emails = await emailRes.json();
+      const primaryEmail = emails.find((e: any) => e.primary)?.email || emails[0]?.email;
+
+      // 4. Find or Create User
+      let user = await User.findOne({ email: primaryEmail.toLowerCase() });
+
+      if (!user) {
+        user = await User.create({
+          email: primaryEmail.toLowerCase(),
+          role: role || UserRole.STUDENT,
+          githubId: githubUser.id.toString(),
+        });
+
+        if (user.role === UserRole.STUDENT) {
+          const { StudentProfile } = await import("../../models/index.js");
+          await StudentProfile.create({
+            userId: user._id,
+            firstName: githubUser.name?.split(" ")[0] || githubUser.login,
+            lastName: githubUser.name?.split(" ").slice(1).join(" ") || "",
+            profilePictureUrl: githubUser.avatar_url,
+            skills: [],
+          });
+        }
+      } else {
+        if (!user.githubId) {
+          user.githubId = githubUser.id.toString();
+          await user.save({ validateBeforeSave: false });
+        }
+      }
+
+      const token = generateToken({
+        userId: user._id.toString(),
+        email: user.email,
+        role: user.role,
+      });
+
+      return {
+        token,
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt.toISOString(),
+        },
+      };
+    },
+
+    /**
      * Reset password
      */
     resetPassword: async (
