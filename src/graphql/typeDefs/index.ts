@@ -64,6 +64,7 @@ export const typeDefs = gql`
     school: String!
     degree: String!
     year: Int!
+    status: String
   }
 
   type CompanyProfile {
@@ -96,6 +97,8 @@ export const typeDefs = gql`
     requirements: String
     additionalInfo: String
     deadline: String
+    maxParticipants: Int
+    applicationCount: Int!
     status: JobStatus!
     postedAt: String!
   }
@@ -175,6 +178,7 @@ export const typeDefs = gql`
     school: String!
     degree: String!
     year: Int!
+    status: String
   }
 
   input CompanyProfileInput {
@@ -200,6 +204,7 @@ export const typeDefs = gql`
     requirements: String
     additionalInfo: String
     deadline: String
+    maxParticipants: Int
     status: JobStatus
   }
 

@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql";
-import { Job, CompanyProfile } from "../../models/index.js";
+import { Job, CompanyProfile, Application } from "../../models/index.js";
 import { 
   Context, 
   JobStatus, 
@@ -19,6 +19,7 @@ interface JobInput {
   requirements?: string;
   additionalInfo?: string;
   deadline?: string;
+  maxParticipants?: number;
   status?: JobStatus;
 }
 
@@ -71,6 +72,9 @@ export const jobResolvers = {
         userId: profile.userId.toString(),
         updatedAt: profile.updatedAt.toISOString(),
       };
+    },
+    applicationCount: async (parent: any) => {
+      return Application.countDocuments({ jobId: parent._id ?? parent.id });
     },
   },
 

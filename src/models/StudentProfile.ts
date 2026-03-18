@@ -51,6 +51,11 @@ const studentProfileSchema = new Schema<IStudentProfile>(
           type: Number,
           required: true,
         },
+        status: {
+          type: String,
+          enum: ["studying", "graduated"],
+          default: "studying",
+        },
       },
     ],
     updatedAt: {
