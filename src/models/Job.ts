@@ -13,6 +13,7 @@ export interface IJob extends Document {
   requirements?: string;
   additionalInfo?: string;
   deadline?: Date;
+  maxParticipants?: number;
   status: JobStatus;
   postedAt: Date;
   createdAt: Date;
@@ -62,6 +63,9 @@ const JobSchema: Schema = new Schema(
     },
     deadline: {
       type: Date,
+    },
+    maxParticipants: {
+      type: Number,
     },
     status: {
       type: String,
