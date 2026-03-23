@@ -128,6 +128,7 @@ export interface JWTPayload {
 export interface Context {
   user?: JWTPayload | undefined;
   req: Request;
+  _cachedStudentProfile?: any;
 }
 
 // Auth Response

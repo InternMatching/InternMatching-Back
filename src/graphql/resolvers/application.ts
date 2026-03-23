@@ -1,11 +1,12 @@
 import { GraphQLError } from "graphql";
 import { Application, Job, StudentProfile, CompanyProfile } from "../../models/index.js";
-import { 
-  Context, 
-  ApplicationStatus, 
-  UserRole 
+import {
+  Context,
+  ApplicationStatus,
+  UserRole
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { calculateMatchScore } from "../../utils/matchScore.js";
 
 export const applicationResolvers = {
   Query: {
@@ -119,8 +120,20 @@ export const applicationResolvers = {
         });
       }
 
-      // Simple match score mock (0-100)
-      const matchScore = Math.floor(Math.random() * 101);
+      // Calculate real match score
+      const job = await Job.findById(jobId);
+      if (!job) {
+        throw new GraphQLError("Job not found", { extensions: { code: "NOT_FOUND" } });
+      }
+
+      const companyProfile = await CompanyProfile.findById(job.companyProfileId);
+      const matchScore = calculateMatchScore(
+        studentProfile,
+        job,
+        coverLetter,
+        "company",
+        companyProfile?.industry
+      );
 
       const application = await Application.create({
         jobId,
