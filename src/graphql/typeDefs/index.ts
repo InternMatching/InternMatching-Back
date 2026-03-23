@@ -101,6 +101,7 @@ export const typeDefs = gql`
     applicationCount: Int!
     status: JobStatus!
     postedAt: String!
+    matchScore: Float
   }
 
   type Application {

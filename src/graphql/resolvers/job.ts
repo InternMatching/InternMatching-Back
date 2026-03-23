@@ -1,12 +1,13 @@
 import { GraphQLError } from "graphql";
-import { Job, CompanyProfile, Application } from "../../models/index.js";
-import { 
-  Context, 
-  JobStatus, 
-  ExperienceLevel, 
-  UserRole 
+import { Job, CompanyProfile, Application, StudentProfile } from "../../models/index.js";
+import {
+  Context,
+  JobStatus,
+  ExperienceLevel,
+  UserRole
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { calculateMatchScore } from "../../utils/matchScore.js";
 
 interface JobInput {
   title: string;
@@ -75,6 +76,19 @@ export const jobResolvers = {
     },
     applicationCount: async (parent: any) => {
       return Application.countDocuments({ jobId: parent._id ?? parent.id });
+    },
+    matchScore: async (parent: any, _: any, context: Context) => {
+      // Only compute for logged-in students
+      if (!context.user || context.user.role !== UserRole.STUDENT) return null;
+
+      // Cache student profile on context to avoid N+1 queries
+      if (!context._cachedStudentProfile) {
+        context._cachedStudentProfile = await StudentProfile.findOne({ userId: context.user.userId });
+      }
+      const studentProfile = context._cachedStudentProfile;
+      if (!studentProfile) return null;
+
+      return calculateMatchScore(studentProfile, parent, undefined, "student");
     },
   },
 
