@@ -1,4 +1,5 @@
 import StudentProfile from "../../models/StudentProfile.js";
+import { User } from "../../models/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole, ExperienceLevel } from "../../types/index.js";
 import { GraphQLError } from "graphql";
@@ -58,6 +59,7 @@ export const studentProfileResolvers = {
         profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
+        isActivelyLooking: profile.isActivelyLooking ?? true,
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
       };
@@ -81,6 +83,7 @@ export const studentProfileResolvers = {
         profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
+        isActivelyLooking: profile.isActivelyLooking ?? true,
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
       }));
@@ -125,6 +128,7 @@ export const studentProfileResolvers = {
         cvUrl: profile.cvUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
+        isActivelyLooking: profile.isActivelyLooking ?? true,
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
       };
@@ -171,6 +175,7 @@ export const studentProfileResolvers = {
         profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
+        isActivelyLooking: profile.isActivelyLooking ?? true,
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
       };
@@ -216,8 +221,23 @@ export const studentProfileResolvers = {
         profilePictureUrl: profile.profilePictureUrl,
         bio: profile.bio,
         experienceLevel: profile.experienceLevel,
+        isActivelyLooking: profile.isActivelyLooking ?? true,
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
+      };
+    },
+  },
+
+  StudentProfile: {
+    user: async (parent: any) => {
+      const user = await User.findById(parent.userId);
+      if (!user) return null;
+      return {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        phoneNumber: user.phoneNumber || null,
+        createdAt: user.createdAt.toISOString(),
       };
     },
   },

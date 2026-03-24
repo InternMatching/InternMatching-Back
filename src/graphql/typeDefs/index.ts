@@ -20,6 +20,12 @@ export const typeDefs = gql`
     rejected
   }
 
+  enum InvitationStatus {
+    pending
+    accepted
+    rejected
+  }
+
   enum JobStatus {
     open
     closed
@@ -49,6 +55,7 @@ export const typeDefs = gql`
   type StudentProfile {
     id: ID!
     userId: ID!
+    user: User
     firstName: String
     lastName: String
     skills: [String!]!
@@ -56,6 +63,7 @@ export const typeDefs = gql`
     profilePictureUrl: String
     bio: String
     experienceLevel: ExperienceLevel
+    isActivelyLooking: Boolean
     education: [Education!]
     updatedAt: String!
   }
@@ -116,6 +124,18 @@ export const typeDefs = gql`
     appliedAt: String!
   }
 
+  type Invitation {
+    id: ID!
+    companyProfileId: ID!
+    company: CompanyProfile
+    studentProfileId: ID!
+    student: StudentProfile
+    message: String
+    status: InvitationStatus!
+    sentAt: String!
+    respondedAt: String
+  }
+
   type GrowthData {
     name: String!
     users: Int!
@@ -172,6 +192,7 @@ export const typeDefs = gql`
     profilePictureUrl: String
     bio: String
     experienceLevel: ExperienceLevel
+    isActivelyLooking: Boolean
     education: [EducationInput!]
   }
 
@@ -239,6 +260,9 @@ export const typeDefs = gql`
     getApplication(id: ID!): Application
     getAllApplications(jobId: ID, studentProfileId: ID): [Application!]!
 
+    # Invitations
+    getInvitations(companyProfileId: ID, studentProfileId: ID): [Invitation!]!
+
     # Admin
     adminStats(period: StatsPeriod): AdminStats!
   }
@@ -270,6 +294,10 @@ export const typeDefs = gql`
     # Applications
     createApplication(jobId: ID!, coverLetter: String): Application!
     updateApplicationStatus(id: ID!, status: ApplicationStatus!): Application!
+
+    # Invitations
+    sendInvitation(studentProfileId: ID!, message: String): Invitation!
+    respondToInvitation(id: ID!, status: InvitationStatus!): Invitation!
 
     # Admin only
     verifyCompany(companyProfileId: ID!): CompanyProfile!

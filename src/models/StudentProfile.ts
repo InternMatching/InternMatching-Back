@@ -37,6 +37,10 @@ const studentProfileSchema = new Schema<IStudentProfile>(
       type: String,
       enum: Object.values(ExperienceLevel),
     },
+    isActivelyLooking: {
+      type: Boolean,
+      default: true,
+    },
     education: [
       {
         school: {
