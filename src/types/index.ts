@@ -21,6 +21,13 @@ export enum ApplicationStatus {
   REJECTED = "rejected",
 }
 
+// Invitation status
+export enum InvitationStatus {
+  PENDING = "pending",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+}
+
 // Job status
 export enum JobStatus {
   OPEN = "open",
@@ -61,6 +68,7 @@ export interface IStudentProfile {
   profilePictureUrl?: string;
   bio?: string;
   experienceLevel?: ExperienceLevel;
+  isActivelyLooking?: boolean;
   education?: {
     school: string;
     degree: string;
