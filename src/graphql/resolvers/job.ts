@@ -27,7 +27,6 @@ interface JobInput {
 export const jobResolvers = {
   Query: {
     getJob: async (_: any, { id }: { id: string }, context: Context) => {
-      requireAuth(context);
       const job = await Job.findById(id);
       if (!job) {
         throw new GraphQLError("Job not found", {
@@ -52,19 +51,50 @@ export const jobResolvers = {
       if (companyProfileId) query.companyProfileId = companyProfileId;
       if (status) query.status = status;
 
-      const jobs = await Job.find(query).sort({ postedAt: -1 });
-      return jobs.map((job) => ({
-        ...job.toObject(),
-        id: job._id.toString(),
-        companyProfileId: job.companyProfileId.toString(),
-        deadline: job.deadline?.toISOString(),
-        postedAt: job.postedAt.toISOString(),
-      }));
+      const jobs = await Job.find(query).sort({ postedAt: -1 }).lean();
+
+      if (jobs.length === 0) return [];
+
+      // Batch-load all company profiles in ONE query (fixes N+1)
+      const companyIds = [...new Set(jobs.map((j) => j.companyProfileId.toString()))];
+      const companies = await CompanyProfile.find({ _id: { $in: companyIds } })
+        .select("companyName logoUrl location foundedYear employeeCount slogan website")
+        .lean();
+      const companyMap = new Map(companies.map((c) => [c._id.toString(), c]));
+
+      // Batch-load all application counts in ONE aggregation (fixes N+1)
+      const jobIds = jobs.map((j) => j._id);
+      const counts = await Application.aggregate([
+        { $match: { jobId: { $in: jobIds } } },
+        { $group: { _id: "$jobId", count: { $sum: 1 } } },
+      ]);
+      const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
+
+      return jobs.map((job) => {
+        const company = companyMap.get(job.companyProfileId.toString()) || null;
+        return {
+          ...job,
+          id: job._id.toString(),
+          companyProfileId: job.companyProfileId.toString(),
+          deadline: job.deadline?.toISOString(),
+          postedAt: job.postedAt?.toISOString(),
+          applicationCount: countMap.get(job._id.toString()) || 0,
+          company: company
+            ? {
+                ...company,
+                id: company._id.toString(),
+                userId: company.userId?.toString(),
+              }
+            : null,
+        };
+      });
     },
   },
 
   Job: {
     company: async (parent: any) => {
+      // Use pre-loaded data from getAllJobs batch query
+      if (parent.company) return parent.company;
       const profile = await CompanyProfile.findById(parent.companyProfileId);
       if (!profile) return null;
       return {
@@ -75,6 +105,8 @@ export const jobResolvers = {
       };
     },
     applicationCount: async (parent: any) => {
+      // Use pre-loaded count from getAllJobs batch query
+      if (parent.applicationCount !== undefined) return parent.applicationCount;
       return Application.countDocuments({ jobId: parent._id ?? parent.id });
     },
     matchScore: async (parent: any, _: any, context: Context) => {
