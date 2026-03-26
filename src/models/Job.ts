@@ -82,4 +82,8 @@ const JobSchema: Schema = new Schema(
   }
 );
 
+// Indexes for query performance
+JobSchema.index({ status: 1, postedAt: -1 });
+JobSchema.index({ companyProfileId: 1 });
+
 export default mongoose.model<IJob>("Job", JobSchema);

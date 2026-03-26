@@ -46,4 +46,9 @@ const ApplicationSchema: Schema = new Schema(
   }
 );
 
+// Indexes for query performance
+ApplicationSchema.index({ jobId: 1 });
+ApplicationSchema.index({ studentProfileId: 1 });
+ApplicationSchema.index({ jobId: 1, studentProfileId: 1 }, { unique: true });
+
 export default mongoose.model<IApplication>("Application", ApplicationSchema);
