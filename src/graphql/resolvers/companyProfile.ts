@@ -83,7 +83,7 @@ export const companyProfileResolvers = {
           return {
             id: profile._id.toString(),
             userId: profile.userId.toString(),
-            companyName: profile.companyName,
+            companyName: profile.companyName || user.email.split('@')[0],
             description: profile.description,
             industry: profile.industry,
             location: profile.location,
