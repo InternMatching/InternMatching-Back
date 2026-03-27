@@ -105,21 +105,21 @@ export const adminResolvers = {
       const activities = [
         ...recentUsers.map(u => ({
           id: u._id.toString() + "_signup",
-          user: u.email,
+          user: u.email || "Хэрэглэгч",
           action: u.role === UserRole.STUDENT ? "Оюутнаар бүртгүүллээ" : "Компаниар бүртгүүллээ",
           timestamp: u.createdAt.toISOString(),
           type: u.role === UserRole.STUDENT ? "STUDENT_SIGNUP" : "COMPANY_SIGNUP"
         })),
         ...recentStudents.map(s => ({
           id: s._id.toString() + "_profile",
-          user: `${(s.userId as any)?.email || "Хэрэглэгч"}`,
+          user: (s.userId as any)?.email || s.firstName || "Хэрэглэгч",
           action: "Оюутны профайл үүсгэлээ",
           timestamp: s.createdAt.toISOString(),
           type: "STUDENT_PROFILE_CREATED"
         })),
         ...recentCompanies.map(c => ({
           id: c._id.toString() + "_profile",
-          user: c.companyName,
+          user: c.companyName || (c.userId as any)?.email || "Компани",
           action: "Компани профайл үүсгэлээ",
           timestamp: c.createdAt.toISOString(),
           type: "COMPANY_PROFILE_CREATED"
@@ -127,13 +127,13 @@ export const adminResolvers = {
         ...recentJobs.map(j => ({
           id: j._id.toString(),
           user: (j.companyProfileId as any)?.companyName || "Компани",
-          action: j.title + " ажлын байр зарлагдлаа",
+          action: (j.title || "Ажил") + " ажлын байр зарлагдлаа",
           timestamp: j.postedAt.toISOString(),
           type: "JOB_POSTED"
         })),
         ...recentApps.map(a => ({
           id: a._id.toString(),
-          user: (a.studentProfileId as any)?.firstName ? `${(a.studentProfileId as any).firstName} ${(a.studentProfileId as any).lastName}` : "Оюутан",
+          user: (a.studentProfileId as any)?.firstName ? `${(a.studentProfileId as any).firstName} ${(a.studentProfileId as any).lastName || ""}`.trim() : "Оюутан",
           action: `${(a.jobId as any)?.title || "Ажил"}-д өргөдөл илгээлээ`,
           timestamp: a.appliedAt.toISOString(),
           type: "APPLICATION_SUBMITTED"
