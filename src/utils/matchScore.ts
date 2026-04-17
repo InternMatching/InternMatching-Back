@@ -1,81 +1,131 @@
-/**
- * Matching algorithm for InternMatch
- *
- * Calculates a 0-100 match score between a student and a job from two perspectives:
- * - "student": How well does this student match the job requirements? (shown to students browsing)
- * - "company": How well does this applicant fit our job? (shown to companies reviewing applicants)
- */
-
-// ── Skill alias map ──────────────────────────────────────────────────────────
 const SKILL_ALIASES: Record<string, string> = {
-  "reactjs": "react",
+  reactjs: "react",
   "react.js": "react",
   "react js": "react",
-  "nodejs": "nodejs",
-  "node": "nodejs",
+  nodejs: "nodejs",
+  node: "nodejs",
   "node.js": "nodejs",
   "node js": "nodejs",
-  "js": "javascript",
-  "ts": "typescript",
-  "ux": "uiux",
-  "ui": "uiux",
+  js: "javascript",
+  ts: "typescript",
+  ux: "uiux",
+  ui: "uiux",
   "ux design": "uiux",
   "ui design": "uiux",
   "ui/ux": "uiux",
-  "uiux": "uiux",
+  uiux: "uiux",
   "c#": "csharp",
   "c++": "cplusplus",
-  "cpp": "cplusplus",
-  "postgres": "postgresql",
-  "mongo": "mongodb",
-  "next": "nextjs",
+  cpp: "cplusplus",
+  postgres: "postgresql",
+  mongo: "mongodb",
+  next: "nextjs",
   "next.js": "nextjs",
-  "nextjs": "nextjs",
-  "vue": "vuejs",
+  nextjs: "nextjs",
+  vue: "vuejs",
   "vue.js": "vuejs",
-  "vuejs": "vuejs",
+  vuejs: "vuejs",
   "angular.js": "angular",
-  "angularjs": "angular",
+  angularjs: "angular",
   "express.js": "express",
-  "expressjs": "express",
-  "tailwind": "tailwindcss",
+  expressjs: "express",
+  tailwind: "tailwindcss",
   "tailwind css": "tailwindcss",
-  "tailwindcss": "tailwindcss",
-  "graphql": "graphql",
-  "gql": "graphql",
-  "python3": "python",
-  "py": "python",
-  "golang": "go",
-  "scss": "sass",
-  "aws": "aws",
+  tailwindcss: "tailwindcss",
+  graphql: "graphql",
+  gql: "graphql",
+  python3: "python",
+  py: "python",
+  golang: "go",
+  scss: "sass",
+  aws: "aws",
   "amazon web services": "aws",
-  "gcp": "googlecloud",
+  gcp: "googlecloud",
   "google cloud": "googlecloud",
-  "docker": "docker",
-  "k8s": "kubernetes",
-  "ml": "machinelearning",
+  docker: "docker",
+  k8s: "kubernetes",
+  ml: "machinelearning",
   "machine learning": "machinelearning",
-  "ai": "artificialintelligence",
+  ai: "artificialintelligence",
   "artificial intelligence": "artificialintelligence",
-  "photoshop": "adobephotoshop",
+  photoshop: "adobephotoshop",
   "adobe photoshop": "adobephotoshop",
-  "illustrator": "adobeillustrator",
+  illustrator: "adobeillustrator",
   "adobe illustrator": "adobeillustrator",
-  "figma": "figma",
-  "sketch": "sketch",
+  figma: "figma",
+  sketch: "sketch",
 };
 
 // ── Mongolian / English stopwords to ignore in text matching ──────────────────
 const STOPWORDS = new Set([
   // English
-  "the", "and", "for", "are", "but", "not", "you", "all", "can", "had",
-  "her", "was", "one", "our", "out", "has", "his", "how", "its", "may",
-  "new", "now", "old", "see", "way", "who", "did", "get", "let", "say",
-  "she", "too", "use", "with", "this", "that", "from", "have", "been",
-  "will", "more", "when", "some", "them", "than", "each", "make",
+  "the",
+  "and",
+  "for",
+  "are",
+  "but",
+  "not",
+  "you",
+  "all",
+  "can",
+  "had",
+  "her",
+  "was",
+  "one",
+  "our",
+  "out",
+  "has",
+  "his",
+  "how",
+  "its",
+  "may",
+  "new",
+  "now",
+  "old",
+  "see",
+  "way",
+  "who",
+  "did",
+  "get",
+  "let",
+  "say",
+  "she",
+  "too",
+  "use",
+  "with",
+  "this",
+  "that",
+  "from",
+  "have",
+  "been",
+  "will",
+  "more",
+  "when",
+  "some",
+  "them",
+  "than",
+  "each",
+  "make",
   // Mongolian common
-  "бол", "нь", "байх", "гэж", "тэр", "энэ", "юм", "мөн", "ба", "буюу",
-  "бид", "тэд", "та", "би", "миний", "таны", "болон", "байна", "байсан",
+  "бол",
+  "нь",
+  "байх",
+  "гэж",
+  "тэр",
+  "энэ",
+  "юм",
+  "мөн",
+  "ба",
+  "буюу",
+  "бид",
+  "тэд",
+  "та",
+  "би",
+  "миний",
+  "таны",
+  "болон",
+  "байна",
+  "байсан",
 ]);
 
 // ── Normalize a skill string for comparison ──────────────────────────────────
@@ -98,7 +148,10 @@ export function normalizeSkill(skill: string): string {
 }
 
 // ── Compare two skills, return match confidence (0, 0.5, or 1) ───────────────
-function skillMatchConfidence(studentSkill: string, requiredSkill: string): number {
+function skillMatchConfidence(
+  studentSkill: string,
+  requiredSkill: string,
+): number {
   const sNorm = normalizeSkill(studentSkill);
   const rNorm = normalizeSkill(requiredSkill);
 
@@ -116,7 +169,7 @@ function skillMatchConfidence(studentSkill: string, requiredSkill: string): numb
 // ── Skills overlap with detailed breakdown ───────────────────────────────────
 export function calculateSkillOverlap(
   studentSkills: string[],
-  requiredSkills: string[]
+  requiredSkills: string[],
 ): { score: number; matched: string[]; partial: string[]; missing: string[] } {
   if (!requiredSkills || requiredSkills.length === 0) {
     return { score: 50, matched: [], partial: [], missing: [] };
@@ -166,7 +219,7 @@ function extractKeywords(text: string | undefined | null): string[] {
 function textRelevanceScore(
   studentBio: string | undefined | null,
   studentSkills: string[],
-  jobText: string
+  jobText: string,
 ): number {
   if (!jobText && !studentBio) return 0;
 
@@ -178,7 +231,10 @@ function textRelevanceScore(
   // Student skills mentioned in job free text
   const normalizedSkills = (studentSkills || []).map((s) => s.toLowerCase());
   for (const skill of normalizedSkills) {
-    if (jobKeywords.has(skill) || [...jobKeywords].some((kw) => kw.includes(skill) || skill.includes(kw))) {
+    if (
+      jobKeywords.has(skill) ||
+      [...jobKeywords].some((kw) => kw.includes(skill) || skill.includes(kw))
+    ) {
       score += 15;
     }
   }
@@ -198,10 +254,13 @@ function textRelevanceScore(
 
 // ── Education relevance score ────────────────────────────────────────────────
 function educationScore(
-  education: Array<{ school: string; degree: string; year: number; status?: string }> | undefined | null,
+  education:
+    | Array<{ school: string; degree: string; year: number; status?: string }>
+    | undefined
+    | null,
   jobTitle: string | undefined | null,
   jobDescription: string | undefined | null,
-  companyIndustry: string | undefined | null
+  companyIndustry: string | undefined | null,
 ): number {
   if (!education || education.length === 0) return 0;
 
@@ -216,15 +275,29 @@ function educationScore(
 
     // Check if degree is relevant to the job
     const techKeywords = [
-      "computer", "software", "programming", "information", "data",
-      "мэдээлэл", "программ", "компьютер", "систем",
-      "design", "дизайн", "graphic", "график",
-      "business", "бизнес", "marketing", "маркетинг",
-      "engineering", "инженер",
+      "computer",
+      "software",
+      "programming",
+      "information",
+      "data",
+      "мэдээлэл",
+      "программ",
+      "компьютер",
+      "систем",
+      "design",
+      "дизайн",
+      "graphic",
+      "график",
+      "business",
+      "бизнес",
+      "marketing",
+      "маркетинг",
+      "engineering",
+      "инженер",
     ];
 
     const hasRelevantDegree = techKeywords.some(
-      (kw) => degree.includes(kw) || jobText.includes(kw)
+      (kw) => degree.includes(kw) || jobText.includes(kw),
     );
 
     if (hasRelevantDegree) score += 50;
@@ -266,16 +339,32 @@ function profileCompletenessScore(student: {
 
 // ── Weights per perspective ──────────────────────────────────────────────────
 const WEIGHTS = {
-  student: { skills: 0.65, text: 0.15, education: 0.10, coverLetter: 0, completeness: 0.10 },
-  company: { skills: 0.55, text: 0.15, education: 0.10, coverLetter: 0.15, completeness: 0.05 },
+  student: {
+    skills: 0.65,
+    text: 0.15,
+    education: 0.1,
+    coverLetter: 0,
+    completeness: 0.1,
+  },
+  company: {
+    skills: 0.55,
+    text: 0.15,
+    education: 0.1,
+    coverLetter: 0.15,
+    completeness: 0.05,
+  },
 };
 
-// ── Main scoring function ────────────────────────────────────────────────────
 export function calculateMatchScore(
   student: {
     skills?: string[] | null;
     bio?: string | null;
-    education?: Array<{ school: string; degree: string; year: number; status?: string }> | null;
+    education?: Array<{
+      school: string;
+      degree: string;
+      year: number;
+      status?: string;
+    }> | null;
     profilePictureUrl?: string | null;
     cvUrl?: string | null;
   },
@@ -288,28 +377,32 @@ export function calculateMatchScore(
   },
   coverLetter: string | undefined | null,
   perspective: "student" | "company",
-  companyIndustry?: string | null
+  companyIndustry?: string | null,
 ): number {
   const w = WEIGHTS[perspective];
 
   // 1. Skills overlap
   const skillResult = calculateSkillOverlap(
     student.skills || [],
-    job.requiredSkills || []
+    job.requiredSkills || [],
   );
 
   // 2. Text relevance
   const jobText = [job.description, job.requirements, job.responsibilities]
     .filter(Boolean)
     .join(" ");
-  const textScore = textRelevanceScore(student.bio, student.skills || [], jobText);
+  const textScore = textRelevanceScore(
+    student.bio,
+    student.skills || [],
+    jobText,
+  );
 
   // 3. Education
   const eduScore = educationScore(
     student.education,
     job.title,
     job.description,
-    companyIndustry
+    companyIndustry,
   );
 
   // 4. Cover letter (only matters for company perspective)
@@ -321,10 +414,10 @@ export function calculateMatchScore(
   // Weighted sum
   const finalScore = Math.round(
     skillResult.score * w.skills +
-    textScore * w.text +
-    eduScore * w.education +
-    clScore * w.coverLetter +
-    profileScore * w.completeness
+      textScore * w.text +
+      eduScore * w.education +
+      clScore * w.coverLetter +
+      profileScore * w.completeness,
   );
 
   return Math.max(0, Math.min(100, finalScore));
