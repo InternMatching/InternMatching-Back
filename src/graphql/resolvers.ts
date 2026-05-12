@@ -1,10 +1,10 @@
-import { authResolvers } from "./auth.js";
-import { studentProfileResolvers } from "./studentProfile.js";
-import { companyProfileResolvers } from "./companyProfile.js";
-import { jobResolvers } from "./job.js";
-import { applicationResolvers } from "./application.js";
-import { invitationResolvers } from "./invitation.js";
-import { adminResolvers } from "./admin.js";
+import { authResolvers } from "../modules/auth/auth.resolvers.js";
+import { studentProfileResolvers } from "../modules/student-profile/studentProfile.resolvers.js";
+import { companyProfileResolvers } from "../modules/company-profile/companyProfile.resolvers.js";
+import { jobResolvers } from "../modules/job/job.resolvers.js";
+import { applicationResolvers } from "../modules/application/application.resolvers.js";
+import { invitationResolvers } from "../modules/invitation/invitation.resolvers.js";
+import { adminResolvers } from "../modules/admin/admin.resolvers.js";
 
 export const resolvers = {
   Query: {

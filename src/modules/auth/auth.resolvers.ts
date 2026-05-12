@@ -1,4 +1,4 @@
-import User from "../../models/User.js";
+import User from "./auth.model.js";
 import { generateToken } from "../../utils/jwt.js";
 import { type Context, UserRole, type AuthResponse } from "../../types/index.js";
 import { GraphQLError } from "graphql";
@@ -264,7 +264,7 @@ export const authResolvers = {
 
         // If it's a student, create an initial profile
         if (user.role === UserRole.STUDENT) {
-          const { StudentProfile } = await import("../../models/index.js");
+          const { default: StudentProfile } = await import("../student-profile/studentProfile.model.js");
           await StudentProfile.create({
             userId: user._id,
             firstName: firstName || "",
@@ -360,7 +360,7 @@ export const authResolvers = {
         });
 
         if (user.role === UserRole.STUDENT) {
-          const { StudentProfile } = await import("../../models/index.js");
+          const { default: StudentProfile } = await import("../student-profile/studentProfile.model.js");
           await StudentProfile.create({
             userId: user._id,
             firstName: githubUser.name?.split(" ")[0] || githubUser.login,

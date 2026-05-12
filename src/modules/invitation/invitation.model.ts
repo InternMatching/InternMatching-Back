@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { InvitationStatus } from "../types/index.js";
+import { InvitationStatus } from "../../types/index.js";
 
 export interface IInvitation extends Document {
   companyProfileId: mongoose.Types.ObjectId;

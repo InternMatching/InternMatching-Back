@@ -1,5 +1,5 @@
-import CompanyProfile from "../../models/CompanyProfile.js";
-import User from "../../models/User.js";
+import CompanyProfile from "./companyProfile.model.js";
+import User from "../auth/auth.model.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole } from "../../types/index.js";
 import { GraphQLError } from "graphql";
