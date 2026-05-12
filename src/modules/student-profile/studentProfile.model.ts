@@ -1,5 +1,5 @@
 import mongoose, { Schema, Model } from "mongoose";
-import { type IStudentProfile, ExperienceLevel } from "../types/index.js";
+import { type IStudentProfile, ExperienceLevel } from "../../types/index.js";
 
 const studentProfileSchema = new Schema<IStudentProfile>(
   {

@@ -1,5 +1,8 @@
 import { GraphQLError } from "graphql";
-import { Job, CompanyProfile, Application, StudentProfile } from "../../models/index.js";
+import Job from "./job.model.js";
+import CompanyProfile from "../company-profile/companyProfile.model.js";
+import Application from "../application/application.model.js";
+import StudentProfile from "../student-profile/studentProfile.model.js";
 import {
   Context,
   JobStatus,
@@ -7,7 +10,7 @@ import {
   UserRole
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
-import { calculateMatchScore } from "../../utils/matchScore.js";
+import { calculateMatchScore } from "../../utils/matchScore/index.js";
 
 interface JobInput {
   title: string;

@@ -1,5 +1,7 @@
 import { GraphQLError } from "graphql";
-import { Invitation, StudentProfile, CompanyProfile } from "../../models/index.js";
+import Invitation from "./invitation.model.js";
+import StudentProfile from "../student-profile/studentProfile.model.js";
+import CompanyProfile from "../company-profile/companyProfile.model.js";
 import {
   Context,
   InvitationStatus,

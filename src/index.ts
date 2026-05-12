@@ -4,8 +4,8 @@ import { ApolloServer } from "apollo-server-express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDatabase } from "./config/database.js";
-import { typeDefs } from "./graphql/typeDefs/index.js";
-import { resolvers } from "./graphql/resolvers/index.js";
+import { typeDefs } from "./graphql/typeDefs.js";
+import { resolvers } from "./graphql/resolvers.js";
 import { createContext } from "./middleware/auth.js";
 import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 

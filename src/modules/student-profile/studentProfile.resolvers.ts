@@ -1,5 +1,5 @@
-import StudentProfile from "../../models/StudentProfile.js";
-import { User } from "../../models/index.js";
+import StudentProfile from "./studentProfile.model.js";
+import User from "../auth/auth.model.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole, ExperienceLevel } from "../../types/index.js";
 import { GraphQLError } from "graphql";

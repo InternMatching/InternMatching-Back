@@ -1,5 +1,9 @@
 import { GraphQLError } from "graphql";
-import { User, StudentProfile, CompanyProfile, Job, Application } from "../../models/index.js";
+import User from "../auth/auth.model.js";
+import StudentProfile from "../student-profile/studentProfile.model.js";
+import CompanyProfile from "../company-profile/companyProfile.model.js";
+import Job from "../job/job.model.js";
+import Application from "../application/application.model.js";
 import { Context, UserRole, StatsPeriod } from "../../types/index.js";
 import { requireRole } from "../../middleware/auth.js";
 

@@ -1,12 +1,15 @@
 import { GraphQLError } from "graphql";
-import { Application, Job, StudentProfile, CompanyProfile } from "../../models/index.js";
+import Application from "./application.model.js";
+import Job from "../job/job.model.js";
+import StudentProfile from "../student-profile/studentProfile.model.js";
+import CompanyProfile from "../company-profile/companyProfile.model.js";
 import {
   Context,
   ApplicationStatus,
   UserRole
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
-import { calculateMatchScore } from "../../utils/matchScore.js";
+import { calculateMatchScore } from "../../utils/matchScore/index.js";
 
 export const applicationResolvers = {
   Query: {
