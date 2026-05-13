@@ -302,7 +302,9 @@ export const typeDefs = gql`
     respondToInvitation(id: ID!, status: InvitationStatus!): Invitation!
 
     # Admin only
+    updateUserRole(userId: ID!, role: UserRole!): User!
     verifyCompany(companyProfileId: ID!): CompanyProfile!
+    adminCreateJob(companyProfileId: ID!, input: JobInput!): Job!
     updateSettings(input: UpdateSettingsInput!): User!
     uploadCompanyLogo(base64Image: String!): CompanyProfile!
     uploadStudentProfilePicture(base64Image: String!): StudentProfile!

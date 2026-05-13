@@ -427,5 +427,36 @@ export const authResolvers = {
 
       return true;
     },
+
+    updateUserRole: async (
+      _: any,
+      { userId, role }: { userId: string; role: string },
+      context: Context
+    ) => {
+      if (!context.user || context.user.role !== UserRole.ADMIN) {
+        throw new GraphQLError("Only admins can update user roles", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { role },
+        { new: true }
+      );
+
+      if (!user) {
+        throw new GraphQLError("User not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      return {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt.toISOString(),
+      };
+    },
   },
 };

@@ -61,7 +61,7 @@ export const jobResolvers = {
       // Batch-load all company profiles in ONE query (fixes N+1)
       const companyIds = [...new Set(jobs.map((j) => j.companyProfileId.toString()))];
       const companies = await CompanyProfile.find({ _id: { $in: companyIds } })
-        .select("companyName logoUrl location foundedYear employeeCount slogan website")
+        .select("companyName description industry logoUrl location foundedYear employeeCount slogan website")
         .lean();
       const companyMap = new Map(companies.map((c) => [c._id.toString(), c]));
 
@@ -194,6 +194,39 @@ export const jobResolvers = {
         companyProfileId: updatedJob!.companyProfileId.toString(),
         deadline: updatedJob!.deadline?.toISOString(),
         postedAt: updatedJob!.postedAt.toISOString(),
+      };
+    },
+
+    adminCreateJob: async (
+      _: any,
+      { companyProfileId, input }: { companyProfileId: string; input: JobInput },
+      context: Context
+    ) => {
+      requireRole(context, [UserRole.ADMIN]);
+
+      if (!input.title?.trim()) {
+        throw new GraphQLError("Title is required", { extensions: { code: "BAD_USER_INPUT" } });
+      }
+
+      const companyProfile = await CompanyProfile.findById(companyProfileId);
+      if (!companyProfile) {
+        throw new GraphQLError("Company profile not found", { extensions: { code: "NOT_FOUND" } });
+      }
+
+      const job = await Job.create({
+        ...input,
+        type: input.type || ExperienceLevel.INTERN,
+        status: input.status || JobStatus.OPEN,
+        companyProfileId: companyProfile._id,
+        postedAt: new Date(),
+      });
+
+      return {
+        ...job.toObject(),
+        id: job._id.toString(),
+        companyProfileId: job.companyProfileId.toString(),
+        deadline: job.deadline?.toISOString(),
+        postedAt: job.postedAt.toISOString(),
       };
     },
 
