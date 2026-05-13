@@ -324,7 +324,15 @@ export const studentProfileResolvers = {
         );
       }
 
-      return parseCV(base64PDF);
+      try {
+        return await parseCV(base64PDF);
+      } catch (err) {
+        console.error("[parseCV resolver]", err);
+        throw new GraphQLError(
+          err instanceof Error ? err.message : "CV задлахад алдаа гарлаа.",
+          { extensions: { code: "INTERNAL_SERVER_ERROR" } },
+        );
+      }
     },
 
     /**
