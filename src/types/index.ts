@@ -32,6 +32,7 @@ export enum InvitationStatus {
 export enum JobStatus {
   OPEN = "open",
   CLOSED = "closed",
+  DRAFT = "draft",
 }
 
 // Stats period

@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { type Context, UserRole, ExperienceLevel } from "../../types/index.js";
 import { GraphQLError } from "graphql";
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
+import { suggestSkillsForStudent } from "../../utils/aiSkillSuggester.js";
 
 export interface StudentProfileInput {
   firstName?: string;
@@ -179,6 +180,43 @@ export const studentProfileResolvers = {
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
       };
+    },
+
+    /**
+     * Suggest skills for the current student based on their profile (AI).
+     */
+    suggestSkillsForMyProfile: async (
+      _: any,
+      __: any,
+      context: Context,
+    ): Promise<string[]> => {
+      const user = requireRole(context, [UserRole.STUDENT]);
+
+      const profile = await StudentProfile.findOne({ userId: user.userId });
+
+      const bio = profile?.bio?.trim() || "";
+      const education = profile?.education ?? [];
+
+      if (!bio && education.length === 0) {
+        throw new GraphQLError(
+          "Эхлээд намтар эсвэл боловсролоо нэмнэ үү",
+          { extensions: { code: "BAD_USER_INPUT" } },
+        );
+      }
+
+      return suggestSkillsForStudent(
+        {
+          bio,
+          experienceLevel: profile?.experienceLevel,
+          education: education.map((e: any) => ({
+            school: e.school,
+            degree: e.degree,
+            year: e.year,
+            status: e.status,
+          })),
+        },
+        profile?.skills ?? [],
+      );
     },
 
     /**

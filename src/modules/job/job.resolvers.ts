@@ -130,7 +130,14 @@ export const jobResolvers = {
   Mutation: {
     createJob: async (_: any, { input }: { input: JobInput }, context: Context) => {
       const user = requireRole(context, [UserRole.COMPANY]);
-      
+
+      if (!input.title?.trim()) {
+        throw new GraphQLError("Title is required", { extensions: { code: "BAD_USER_INPUT" } });
+      }
+      if (!input.type) {
+        throw new GraphQLError("Type is required", { extensions: { code: "BAD_USER_INPUT" } });
+      }
+
       const companyProfile = await CompanyProfile.findOne({ userId: user.userId });
       if (!companyProfile) {
         throw new GraphQLError("Company profile not found", {
@@ -138,7 +145,8 @@ export const jobResolvers = {
         });
       }
 
-      if (!companyProfile.isVerified) {
+      const isDraft = input.status === JobStatus.DRAFT;
+      if (!companyProfile.isVerified && !isDraft) {
         throw new GraphQLError("Company must be verified to post jobs", {
           extensions: { code: "FORBIDDEN" },
         });
@@ -146,6 +154,7 @@ export const jobResolvers = {
 
       const job = await Job.create({
         ...input,
+        status: isDraft ? JobStatus.DRAFT : JobStatus.OPEN,
         companyProfileId: companyProfile._id,
         postedAt: new Date(),
       });

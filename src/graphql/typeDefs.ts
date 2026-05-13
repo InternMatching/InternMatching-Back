@@ -29,6 +29,7 @@ export const typeDefs = gql`
   enum JobStatus {
     open
     closed
+    draft
   }
 
   enum StatsPeriod {
@@ -216,9 +217,9 @@ export const typeDefs = gql`
   }
 
   input JobInput {
-    title: String!
+    title: String
     description: String
-    type: ExperienceLevel!
+    type: ExperienceLevel
     requiredSkills: [String!]
     location: String
     salaryRange: String
@@ -281,6 +282,7 @@ export const typeDefs = gql`
     # Student Profile
     createStudentProfile(input: StudentProfileInput!): StudentProfile!
     updateStudentProfile(input: StudentProfileInput!): StudentProfile!
+    suggestSkillsForMyProfile: [String!]!
 
     # Company Profile
     createCompanyProfile(input: CompanyProfileInput!): CompanyProfile!
