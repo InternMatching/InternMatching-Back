@@ -2,7 +2,10 @@ import { GraphQLError } from "graphql";
 import Invitation from "./invitation.model.js";
 import StudentProfile from "../student-profile/studentProfile.model.js";
 import CompanyProfile from "../company-profile/companyProfile.model.js";
+import Application from "../application/application.model.js";
+import Job from "../job/job.model.js";
 import {
+  ApplicationStatus,
   Context,
   InvitationStatus,
   UserRole,
@@ -101,6 +104,20 @@ export const invitationResolvers = {
         status: InvitationStatus.PENDING,
         sentAt: new Date(),
       });
+
+      // Auto-approve any pending applications this student has for jobs from this company
+      const companyJobs = await Job.find({ companyProfileId: companyProfile._id }).select("_id");
+      if (companyJobs.length > 0) {
+        const jobIds = companyJobs.map((j) => j._id);
+        await Application.updateMany(
+          {
+            studentProfileId: studentProfileId,
+            jobId: { $in: jobIds },
+            status: { $nin: [ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED] },
+          },
+          { status: ApplicationStatus.ACCEPTED }
+        );
+      }
 
       return {
         ...invitation.toObject(),
