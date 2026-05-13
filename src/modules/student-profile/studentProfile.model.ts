@@ -62,6 +62,13 @@ const studentProfileSchema = new Schema<IStudentProfile>(
         },
       },
     ],
+    cvParseCount: {
+      type: Number,
+      default: 0,
+    },
+    cvParseDate: {
+      type: Date,
+    },
     updatedAt: {
       type: Date,
       default: Date.now,

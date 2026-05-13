@@ -11,6 +11,7 @@ import {
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { calculateMatchScore } from "../../utils/matchScore/index.js";
+import { getAIMatchScore } from "../../utils/aiMatchScore.js";
 
 interface JobInput {
   title: string;
@@ -29,6 +30,30 @@ interface JobInput {
 
 export const jobResolvers = {
   Query: {
+    getAIMatchScore: async (
+      _: any,
+      { jobId }: { jobId: string },
+      context: Context,
+    ) => {
+      requireRole(context, [UserRole.STUDENT]);
+
+      const [job, studentProfile] = await Promise.all([
+        Job.findById(jobId),
+        StudentProfile.findOne({ userId: context.user!.userId }),
+      ]);
+
+      if (!job) {
+        throw new GraphQLError("Job not found", { extensions: { code: "NOT_FOUND" } });
+      }
+      if (!studentProfile) {
+        throw new GraphQLError("Student profile not found. Please complete your profile first.", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      return getAIMatchScore(studentProfile, job);
+    },
+
     getJob: async (_: any, { id }: { id: string }, context: Context) => {
       const job = await Job.findById(id);
       if (!job) {

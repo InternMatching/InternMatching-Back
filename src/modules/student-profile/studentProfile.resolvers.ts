@@ -5,6 +5,8 @@ import { type Context, UserRole, ExperienceLevel } from "../../types/index.js";
 import { GraphQLError } from "graphql";
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
 import { suggestSkillsForStudent } from "../../utils/aiSkillSuggester.js";
+import { parseCV } from "../../utils/aiCV.js";
+import { reviewCV } from "../../utils/aiCVReview.js";
 
 export interface StudentProfileInput {
   firstName?: string;
@@ -263,6 +265,99 @@ export const studentProfileResolvers = {
         education: profile.education,
         updatedAt: profile.updatedAt.toISOString(),
       };
+    },
+
+    /**
+     * Parse a CV PDF using Claude AI and return structured profile data.
+     * Limited to 3 parses per calendar day per student.
+     */
+    parseCV: async (
+      _: any,
+      { base64PDF }: { base64PDF: string },
+      context: Context,
+    ) => {
+      const user = requireRole(context, [UserRole.STUDENT]);
+
+      if (!base64PDF || base64PDF.length < 100) {
+        throw new GraphQLError("Invalid PDF data", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      // Rough size guard: base64 of 5MB PDF ≈ 6.8MB string
+      if (base64PDF.length > 7_000_000) {
+        throw new GraphQLError("PDF too large. Please upload a file under 5MB.", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const CV_DAILY_LIMIT = 3;
+
+      const profile = await StudentProfile.findOne({ userId: user.userId });
+
+      if (profile) {
+        const today = new Date();
+        const parseDate = profile.cvParseDate;
+        const isSameDay =
+          parseDate &&
+          parseDate.getFullYear() === today.getFullYear() &&
+          parseDate.getMonth() === today.getMonth() &&
+          parseDate.getDate() === today.getDate();
+
+        const count = isSameDay ? (profile.cvParseCount ?? 0) : 0;
+
+        if (count >= CV_DAILY_LIMIT) {
+          throw new GraphQLError(
+            "Өдөрт CV задлах хязгаарт хүрлээ. Маргааш дахин оролдоно уу.",
+            { extensions: { code: "CV_PARSE_LIMIT_EXCEEDED" } },
+          );
+        }
+
+        await StudentProfile.updateOne(
+          { userId: user.userId },
+          {
+            $set: {
+              cvParseCount: count + 1,
+              cvParseDate: isSameDay ? parseDate : today,
+            },
+          },
+        );
+      }
+
+      return parseCV(base64PDF);
+    },
+
+    /**
+     * Review a CV PDF using Claude AI and return professional feedback in Mongolian.
+     * Public — no auth required.
+     */
+    reviewCV: async (
+      _: any,
+      { base64PDF }: { base64PDF: string },
+      context: Context,
+    ) => {
+      requireAuth(context);
+      if (!base64PDF || base64PDF.length < 100) {
+        throw new GraphQLError("Invalid PDF data", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      if (base64PDF.length > 7_000_000) {
+        throw new GraphQLError("PDF too large. Please upload a file under 5MB.", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      try {
+        return await reviewCV(base64PDF);
+      } catch (err) {
+        console.error("[reviewCV resolver]", err);
+        throw new GraphQLError(
+          err instanceof Error ? err.message : "CV шүүмжлэхэд алдаа гарлаа.",
+          { extensions: { code: "INTERNAL_SERVER_ERROR" } },
+        );
+      }
     },
   },
 

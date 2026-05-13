@@ -75,6 +75,8 @@ export interface IStudentProfile {
     degree: string;
     year: number;
   }[];
+  cvParseCount?: number;
+  cvParseDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

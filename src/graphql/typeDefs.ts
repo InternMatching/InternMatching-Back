@@ -137,6 +137,47 @@ export const typeDefs = gql`
     respondedAt: String
   }
 
+  type CVParseResult {
+    firstName: String
+    lastName: String
+    bio: String
+    skills: [String!]!
+    education: [Education!]!
+    experienceLevel: ExperienceLevel
+  }
+
+  type CVSectionFeedback {
+    score: Int!
+    strengths: [String!]!
+    improvements: [String!]!
+  }
+
+  type CVReviewSections {
+    contact: CVSectionFeedback!
+    summary: CVSectionFeedback!
+    experience: CVSectionFeedback!
+    education: CVSectionFeedback!
+    skills: CVSectionFeedback!
+    format: CVSectionFeedback!
+  }
+
+  type CVReviewResult {
+    overallScore: Int!
+    overallSummary: String!
+    sections: CVReviewSections!
+    topRecommendations: [String!]!
+    atsScore: Int!
+    verdict: String!
+  }
+
+  type AIMatchResult {
+    score: Int!
+    summary: String!
+    strengths: [String!]!
+    gaps: [String!]!
+    recommendation: String!
+  }
+
   type GrowthData {
     name: String!
     users: Int!
@@ -256,6 +297,7 @@ export const typeDefs = gql`
     # Jobs
     getJob(id: ID!): Job
     getAllJobs(companyProfileId: ID, status: JobStatus): [Job!]!
+    getAIMatchScore(jobId: ID!): AIMatchResult!
 
     # Applications
     getApplication(id: ID!): Application
@@ -300,6 +342,10 @@ export const typeDefs = gql`
     # Invitations
     sendInvitation(studentProfileId: ID!, message: String): Invitation!
     respondToInvitation(id: ID!, status: InvitationStatus!): Invitation!
+
+    # CV & AI
+    parseCV(base64PDF: String!): CVParseResult!
+    reviewCV(base64PDF: String!): CVReviewResult!
 
     # Admin only
     updateUserRole(userId: ID!, role: UserRole!): User!
