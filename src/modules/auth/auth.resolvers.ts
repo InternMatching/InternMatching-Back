@@ -1,9 +1,33 @@
 import User from "./auth.model.js";
 import { generateToken } from "../../utils/jwt.js";
-import { type Context, UserRole, type AuthResponse } from "../../types/index.js";
+import { type Context, UserRole, NotificationType, type AuthResponse } from "../../types/index.js";
 import { GraphQLError } from "graphql";
 import crypto from "crypto";
 import { sendEmail } from "../../utils/email.js";
+import { pushNotification } from "../../utils/pushNotification.js";
+
+const roleLabel: Record<string, string> = {
+  student: "Оюутан",
+  company: "Компани",
+  admin: "Админ",
+};
+
+async function notifyAdminsNewUser(email: string, role: string): Promise<void> {
+  try {
+    const admins = await User.find({ role: UserRole.ADMIN }).select("_id");
+    admins.forEach((admin) => {
+      pushNotification({
+        userId: admin._id.toString(),
+        type: NotificationType.NEW_USER_REGISTERED,
+        title: "Шинэ хэрэглэгч бүртгэгдлээ",
+        message: `${roleLabel[role] ?? role} ${email} системд бүртгэгдлээ.`,
+        data: { email, role },
+      });
+    });
+  } catch (err) {
+    console.error("[notify admins] new user:", err);
+  }
+}
 
 export interface SignupInput {
   email: string;
@@ -116,6 +140,8 @@ export const authResolvers = {
         password,
         role,
       });
+
+      notifyAdminsNewUser(user.email, user.role);
 
       // Generate JWT token
       const token = generateToken({
@@ -262,6 +288,8 @@ export const authResolvers = {
           githubId: provider === "github" ? socialId : undefined,
         });
 
+        notifyAdminsNewUser(user.email, user.role);
+
         // If it's a student, create an initial profile
         if (user.role === UserRole.STUDENT) {
           const { default: StudentProfile } = await import("../student-profile/studentProfile.model.js");
@@ -358,6 +386,8 @@ export const authResolvers = {
           role: role || UserRole.STUDENT,
           githubId: githubUser.id.toString(),
         });
+
+        notifyAdminsNewUser(user.email, user.role);
 
         if (user.role === UserRole.STUDENT) {
           const { default: StudentProfile } = await import("../student-profile/studentProfile.model.js");

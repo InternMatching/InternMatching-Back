@@ -1,4 +1,4 @@
-import express from "express"; 
+import express from "express";
 
 import { ApolloServer } from "apollo-server-express";
 import cors from "cors";
@@ -7,6 +7,8 @@ import { connectDatabase } from "./config/database.js";
 import { typeDefs } from "./graphql/typeDefs.js";
 import { resolvers } from "./graphql/resolvers.js";
 import { createContext } from "./middleware/auth.js";
+import { verifyToken } from "./utils/jwt.js";
+import { addSSEClient, removeSSEClient } from "./utils/sseManager.js";
 import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 
 
@@ -79,6 +81,33 @@ async function startServer() {
     path: "/graphql",
     cors: false,
     bodyParserConfig: { limit: "20mb" },
+  });
+
+  // SSE — real-time notifications
+  // EventSource cannot set headers, so the JWT is passed as ?token=...
+  app.get("/api/notifications/stream", (req, res) => {
+    const token = req.query.token as string | undefined;
+    if (!token) { res.status(401).end(); return; }
+
+    const payload = verifyToken(token);
+    if (!payload) { res.status(401).end(); return; }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    // Keep-alive ping every 25 s to prevent proxy timeouts
+    const ping = setInterval(() => {
+      try { res.write(": ping\n\n"); } catch { clearInterval(ping); }
+    }, 25_000);
+
+    addSSEClient(payload.userId, res);
+
+    req.on("close", () => {
+      clearInterval(ping);
+      removeSSEClient(payload.userId, res);
+    });
   });
 
   // Health check endpoint

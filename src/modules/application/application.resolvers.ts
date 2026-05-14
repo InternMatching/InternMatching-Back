@@ -10,6 +10,8 @@ import {
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { calculateMatchScore } from "../../utils/matchScore/index.js";
+import { pushNotification } from "../../utils/pushNotification.js";
+import { NotificationType } from "../../types/index.js";
 
 export const applicationResolvers = {
   Query: {
@@ -147,6 +149,18 @@ export const applicationResolvers = {
         appliedAt: new Date(),
       });
 
+      // Notify company that a student applied
+      if (companyProfile) {
+        const studentName = `${studentProfile.firstName ?? ""} ${studentProfile.lastName ?? ""}`.trim() || "Оюутан";
+        pushNotification({
+          userId: companyProfile.userId.toString(),
+          type: NotificationType.APPLICATION_RECEIVED,
+          title: "Шинэ өргөдөл ирлээ",
+          message: `${studentName} "${job.title}" ажилд өргөдөл гаргалаа.`,
+          data: { applicationId: application._id.toString(), jobId: job._id.toString(), jobTitle: job.title },
+        });
+      }
+
       return {
         ...application.toObject(),
         id: application._id.toString(),
@@ -177,6 +191,27 @@ export const applicationResolvers = {
       }
 
       const updatedApp = await Application.findByIdAndUpdate(id, { status }, { new: true });
+
+      // Notify student of status change
+      const studentProfile = await StudentProfile.findById(updatedApp!.studentProfileId);
+      if (studentProfile) {
+        const job = await Job.findById(updatedApp!.jobId);
+        const statusLabels: Record<string, string> = {
+          reviewing: "Хянагдаж байна",
+          interview_scheduled: "Ярилцлагад урьсан",
+          accepted: "Хүлээн авлаа",
+          rejected: "Татгалзлаа",
+        };
+        const label = statusLabels[status] ?? status;
+        pushNotification({
+          userId: studentProfile.userId.toString(),
+          type: NotificationType.APPLICATION_STATUS_CHANGED,
+          title: "Өргөдлийн статус өөрчлөгдлөө",
+          message: `"${job?.title ?? "Ажлын байр"}" өргөдлийн статус: ${label}`,
+          data: { applicationId: updatedApp!._id.toString(), status, jobTitle: job?.title ?? "" },
+        });
+      }
+
       return {
         ...updatedApp!.toObject(),
         id: updatedApp!._id.toString(),

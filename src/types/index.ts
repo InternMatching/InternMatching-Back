@@ -128,6 +128,29 @@ export interface IApplication {
   appliedAt: Date;
 }
 
+// Notification types
+export enum NotificationType {
+  INVITATION_RECEIVED = "INVITATION_RECEIVED",
+  INVITATION_ACCEPTED = "INVITATION_ACCEPTED",
+  INVITATION_REJECTED = "INVITATION_REJECTED",
+  APPLICATION_RECEIVED = "APPLICATION_RECEIVED",
+  APPLICATION_STATUS_CHANGED = "APPLICATION_STATUS_CHANGED",
+  NEW_JOB_POSTED = "NEW_JOB_POSTED",
+  COMPANY_PENDING_VERIFICATION = "COMPANY_PENDING_VERIFICATION",
+  NEW_USER_REGISTERED = "NEW_USER_REGISTERED",
+}
+
+export interface INotification {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data: Record<string, string>;
+  read: boolean;
+  createdAt: Date;
+}
+
 // JWT Payload
 export interface JWTPayload {
   userId: string;
