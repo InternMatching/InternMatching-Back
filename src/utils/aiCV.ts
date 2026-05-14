@@ -31,7 +31,7 @@ export async function parseCV(base64PDF: string): Promise<CVParseResult> {
     tools: [
       {
         name: "extract_cv_data",
-        description: "Extract structured information from a CV/resume document",
+        description: "Extract structured information from a CV/resume document. Detect the primary language of the CV and preserve it in all text fields (bio, degree, school). If the CV is in Mongolian, write bio and degree/school in Mongolian. If in English, write in English. Skills are always canonical tech names (e.g. React, TypeScript) regardless of language.",
         input_schema: {
           type: "object" as const,
           properties: {
@@ -46,7 +46,7 @@ export async function parseCV(base64PDF: string): Promise<CVParseResult> {
             bio: {
               type: "string",
               description:
-                "2-3 sentence professional summary written in first person, based on their CV experience and skills",
+                "2-3 sentence professional summary written in first person, based on their CV experience and skills. Write in the same language as the CV — Mongolian if the CV is in Mongolian, English if in English.",
             },
             skills: {
               type: "array",
@@ -65,7 +65,7 @@ export async function parseCV(base64PDF: string): Promise<CVParseResult> {
                   },
                   degree: {
                     type: "string",
-                    description: "Degree title and field of study",
+                    description: "Degree title and field of study. Preserve the language of the CV.",
                   },
                   year: {
                     type: "number",
@@ -103,7 +103,7 @@ export async function parseCV(base64PDF: string): Promise<CVParseResult> {
           } as any,
           {
             type: "text",
-            text: "Extract all relevant information from this CV/resume for an intern candidate profile on an internship matching platform. Focus on technical skills, education history, and synthesize a professional bio from the content.",
+            text: "Extract all relevant information from this CV/resume for an intern candidate profile on an internship matching platform. Focus on technical skills, education history, and synthesize a professional bio from the content. IMPORTANT: Detect the primary language of the CV. Write the bio, school names, and degree titles in that same language — if the CV is in Mongolian write those fields in Mongolian, if in English write in English. Do not translate. Skills must always use canonical English tech names (e.g. React, Python, Figma).",
           },
         ],
       },
