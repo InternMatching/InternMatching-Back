@@ -272,6 +272,28 @@ export const typeDefs = gql`
     status: JobStatus
   }
 
+  enum NotificationType {
+    INVITATION_RECEIVED
+    INVITATION_ACCEPTED
+    INVITATION_REJECTED
+    APPLICATION_RECEIVED
+    APPLICATION_STATUS_CHANGED
+    NEW_JOB_POSTED
+    COMPANY_PENDING_VERIFICATION
+    NEW_USER_REGISTERED
+  }
+
+  type Notification {
+    id: ID!
+    userId: ID!
+    type: NotificationType!
+    title: String!
+    message: String!
+    data: String
+    read: Boolean!
+    createdAt: String!
+  }
+
   input UpdateSettingsInput {
     email: String
     phoneNumber: String
@@ -305,6 +327,10 @@ export const typeDefs = gql`
 
     # Invitations
     getInvitations(companyProfileId: ID, studentProfileId: ID): [Invitation!]!
+
+    # Notifications
+    getNotifications(limit: Int): [Notification!]!
+    getUnreadNotificationCount: Int!
 
     # Admin
     adminStats(period: StatsPeriod): AdminStats!
@@ -342,6 +368,11 @@ export const typeDefs = gql`
     # Invitations
     sendInvitation(studentProfileId: ID!, message: String): Invitation!
     respondToInvitation(id: ID!, status: InvitationStatus!): Invitation!
+
+    # Notifications
+    markNotificationRead(id: ID!): Boolean!
+    markAllNotificationsRead: Boolean!
+    deleteNotification(id: ID!): Boolean!
 
     # CV & AI
     parseCV(base64PDF: String!): CVParseResult!

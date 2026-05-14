@@ -1,9 +1,10 @@
 import CompanyProfile from "./companyProfile.model.js";
 import User from "../auth/auth.model.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
-import { type Context, UserRole } from "../../types/index.js";
+import { type Context, UserRole, NotificationType } from "../../types/index.js";
 import { GraphQLError } from "graphql";
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
+import { pushNotification } from "../../utils/pushNotification.js";
 
 export interface CompanyProfileInput {
   companyName: string;
@@ -139,6 +140,19 @@ export const companyProfileResolvers = {
         isVerified: false,
         updatedAt: new Date(),
       });
+
+      // Notify all admins — fire-and-forget, don't block the response
+      User.find({ role: UserRole.ADMIN }).select("_id").then((admins) => {
+        admins.forEach((admin) => {
+          pushNotification({
+            userId: admin._id.toString(),
+            type: NotificationType.COMPANY_PENDING_VERIFICATION,
+            title: "Шинэ компани бүртгэгдлээ",
+            message: `"${profile.companyName}" компани баталгаажуулалт хүсч байна.`,
+            data: { companyProfileId: profile._id.toString(), companyName: profile.companyName },
+          });
+        });
+      }).catch((err) => console.error("[notify admins] company pending:", err));
 
       return {
         id: profile._id.toString(),

@@ -12,6 +12,8 @@ import {
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { calculateMatchScore } from "../../utils/matchScore/index.js";
 import { getAIMatchScore } from "../../utils/aiMatchScore.js";
+import { pushNotification } from "../../utils/pushNotification.js";
+import { NotificationType } from "../../types/index.js";
 
 interface JobInput {
   title: string;
@@ -46,7 +48,7 @@ export const jobResolvers = {
         throw new GraphQLError("Job not found", { extensions: { code: "NOT_FOUND" } });
       }
       if (!studentProfile) {
-        throw new GraphQLError("Student profile not found. Please complete your profile first.", {
+        throw new GraphQLError("Профайл олдсонгүй. Эхлээд профайлаа бүрэн бөглөнө үү.", {
           extensions: { code: "NOT_FOUND" },
         });
       }
@@ -183,6 +185,29 @@ export const jobResolvers = {
         companyProfileId: companyProfile._id,
         postedAt: new Date(),
       });
+
+      // Notify actively-looking students with at least 1 matching skill (max 100)
+      if (!isDraft && Array.isArray(input.requiredSkills) && input.requiredSkills.length > 0) {
+        const skillsLower = input.requiredSkills.map((s: string) => s.toLowerCase());
+        StudentProfile.find({ isActivelyLooking: true })
+          .select("userId skills")
+          .limit(500)
+          .then((students) => {
+            const matched = students.filter((s) =>
+              s.skills.some((sk) => skillsLower.includes(sk.toLowerCase()))
+            ).slice(0, 100);
+            matched.forEach((s) => {
+              pushNotification({
+                userId: s.userId.toString(),
+                type: NotificationType.NEW_JOB_POSTED,
+                title: "Таны чиглэлийн шинэ ажлын байр",
+                message: `${companyProfile.companyName}: "${job.title}" нээлттэй боллоо.`,
+                data: { jobId: job._id.toString(), jobTitle: job.title, companyName: companyProfile.companyName },
+              });
+            });
+          })
+          .catch((err) => console.error("[job notify students]", err));
+      }
 
       return {
         ...job.toObject(),

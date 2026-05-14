@@ -70,7 +70,7 @@ export async function getAIMatchScore(
       {
         name: "evaluate_match",
         description:
-          "Evaluate how well an intern candidate matches a job posting",
+          "Evaluate how well an intern candidate matches a job posting. All text fields must be written in Mongolian (Монгол хэлээр).",
         input_schema: {
           type: "object" as const,
           properties: {
@@ -80,25 +80,25 @@ export async function getAIMatchScore(
             },
             summary: {
               type: "string",
-              description: "One concise sentence summarizing the overall fit",
+              description: "Нэг товч өгүүлбэрээр ерөнхий тохирлыг дүгнэ. Монгол хэлээр бич.",
             },
             strengths: {
               type: "array",
               items: { type: "string" },
               description:
-                "Up to 3 specific reasons this candidate is a good fit",
+                "Тухайн нэр дэвшигч яагаад тохиромжтой болохыг тодорхой дурдсан 3 хүртэлх шалтгаан. Монгол хэлээр бич.",
             },
             gaps: {
               type: "array",
               items: { type: "string" },
               description:
-                "Up to 3 specific areas where the candidate falls short",
+                "Нэр дэвшигч дутагдалтай байгаа 3 хүртэлх тодорхой чиглэл. Монгол хэлээр бич.",
             },
             recommendation: {
               type: "string",
               enum: ["hire", "maybe", "pass"],
               description:
-                "hire = strong fit, invite for interview; maybe = potential but needs review; pass = poor fit",
+                "hire = маш тохиромжтой; maybe = боломжтой, нэмэлт шалгалт хэрэгтэй; pass = тохиромжгүй",
             },
           },
           required: ["score", "summary", "strengths", "gaps", "recommendation"],
@@ -109,15 +109,15 @@ export async function getAIMatchScore(
     messages: [
       {
         role: "user",
-        content: `You are an experienced HR manager evaluating an intern candidate for a specific position.
+        content: `Та туршлагатай HR менежер бөгөөд дадлагын нэр дэвшигчийг тодорхой ажлын байранд үнэлж байна.
 
-CANDIDATE PROFILE:
+НЭР ДЭВШИГЧИЙН МЭДЭЭЛЭЛ:
 ${studentText}
 
-INTERNSHIP POSITION:
+ДАДЛАГЫН АЖЛЫН БАЙР:
 ${jobText}
 
-Evaluate objectively based on skill alignment, relevant experience, and potential to succeed. Be specific — reference actual skills and requirements from both sides.`,
+Ур чадварын нийцэл, холбогдох туршлага, амжилтанд хүрэх боломжид тулгуурлан бодитоор үнэл. Тодорхой бай — хоёр талын бодит ур чадвар болон шаардлагуудыг дурд. Бүх хариултыг Монгол хэлээр бич.`,
       },
     ],
   });

@@ -11,6 +11,8 @@ import {
   UserRole,
 } from "../../types/index.js";
 import { requireAuth } from "../../middleware/auth.js";
+import { pushNotification } from "../../utils/pushNotification.js";
+import { NotificationType } from "../../types/index.js";
 
 export const invitationResolvers = {
   Query: {
@@ -119,6 +121,15 @@ export const invitationResolvers = {
         );
       }
 
+      // Notify the student
+      pushNotification({
+        userId: student.userId.toString(),
+        type: NotificationType.INVITATION_RECEIVED,
+        title: "Шинэ урилга ирлээ",
+        message: `${companyProfile.companyName} таныг дадлагад урьж байна.`,
+        data: { invitationId: invitation._id.toString(), companyName: companyProfile.companyName },
+      });
+
       return {
         ...invitation.toObject(),
         id: invitation._id.toString(),
@@ -171,6 +182,24 @@ export const invitationResolvers = {
       invitation.status = status;
       invitation.respondedAt = new Date();
       await invitation.save();
+
+      // Notify the company
+      const companyProfile = await CompanyProfile.findById(invitation.companyProfileId);
+      if (companyProfile) {
+        const notifType = status === InvitationStatus.ACCEPTED
+          ? NotificationType.INVITATION_ACCEPTED
+          : NotificationType.INVITATION_REJECTED;
+        const studentName = `${studentProfile.firstName ?? ""} ${studentProfile.lastName ?? ""}`.trim() || "Оюутан";
+        pushNotification({
+          userId: companyProfile.userId.toString(),
+          type: notifType,
+          title: status === InvitationStatus.ACCEPTED ? "Урилга хүлээн авлаа" : "Урилга татгалзав",
+          message: status === InvitationStatus.ACCEPTED
+            ? `${studentName} таны урилгыг хүлээн авлаа.`
+            : `${studentName} таны урилгыг татгалзлаа.`,
+          data: { invitationId: invitation._id.toString(), studentName },
+        });
+      }
 
       return {
         ...invitation.toObject(),
