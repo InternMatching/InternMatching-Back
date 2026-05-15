@@ -10,6 +10,7 @@ import {
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { calculateMatchScore } from "../../utils/matchScore/index.js";
+import { getAIMatchScore } from "../../utils/aiMatchScore.js";
 import { pushNotification } from "../../utils/pushNotification.js";
 import { NotificationType } from "../../types/index.js";
 
@@ -67,7 +68,7 @@ export const applicationResolvers = {
         }
       }
 
-      const applications = await Application.find(query).sort({ appliedAt: -1 });
+      const applications = await Application.find(query).sort({ matchScore: -1, appliedAt: -1 });
       return applications.map((app) => ({
         ...app.toObject(),
         id: app._id.toString(),
@@ -132,13 +133,15 @@ export const applicationResolvers = {
       }
 
       const companyProfile = await CompanyProfile.findById(job.companyProfileId);
-      const matchScore = calculateMatchScore(
-        studentProfile,
-        job,
-        coverLetter,
-        "company",
-        companyProfile?.industry
-      );
+
+      let matchScore: number;
+      try {
+        const aiResult = await getAIMatchScore(studentProfile, job);
+        matchScore = aiResult.score;
+      } catch (err) {
+        console.warn("[createApplication] AI score failed, falling back to keyword score:", err);
+        matchScore = calculateMatchScore(studentProfile, job, coverLetter, "company", companyProfile?.industry);
+      }
 
       const application = await Application.create({
         jobId,
