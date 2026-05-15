@@ -344,7 +344,8 @@ export const studentProfileResolvers = {
       { base64PDF }: { base64PDF: string },
       context: Context,
     ) => {
-      requireAuth(context);
+      const user = requireRole(context, [UserRole.STUDENT]);
+
       if (!base64PDF || base64PDF.length < 100) {
         throw new GraphQLError("Invalid PDF data", {
           extensions: { code: "BAD_USER_INPUT" },
@@ -355,6 +356,37 @@ export const studentProfileResolvers = {
         throw new GraphQLError("PDF too large. Please upload a file under 5MB.", {
           extensions: { code: "BAD_USER_INPUT" },
         });
+      }
+
+      const profile = await StudentProfile.findOne({ userId: user.userId });
+
+      if (profile) {
+        const today = new Date();
+        const reviewDate = profile.cvReviewDate;
+        const isSameDay =
+          reviewDate &&
+          reviewDate.getFullYear() === today.getFullYear() &&
+          reviewDate.getMonth() === today.getMonth() &&
+          reviewDate.getDate() === today.getDate();
+
+        const count = isSameDay ? (profile.cvReviewCount ?? 0) : 0;
+
+        if (count >= 1) {
+          throw new GraphQLError(
+            "Өнөөдрийн CV шүүмжлэх хязгаарт хүрлээ. Маргааш дахин оролдоно уу.",
+            { extensions: { code: "CV_REVIEW_LIMIT_EXCEEDED" } },
+          );
+        }
+
+        await StudentProfile.updateOne(
+          { userId: user.userId },
+          {
+            $set: {
+              cvReviewCount: count + 1,
+              cvReviewDate: isSameDay ? reviewDate : today,
+            },
+          },
+        );
       }
 
       try {

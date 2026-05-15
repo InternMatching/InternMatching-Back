@@ -53,6 +53,33 @@ export const jobResolvers = {
         });
       }
 
+      const today = new Date();
+      const aiMatchDate = studentProfile.aiMatchDate;
+      const isSameDay =
+        aiMatchDate &&
+        aiMatchDate.getFullYear() === today.getFullYear() &&
+        aiMatchDate.getMonth() === today.getMonth() &&
+        aiMatchDate.getDate() === today.getDate();
+
+      const aiMatchCount = isSameDay ? (studentProfile.aiMatchCount ?? 0) : 0;
+
+      if (aiMatchCount >= 1) {
+        throw new GraphQLError(
+          "Өнөөдрийн AI шинжилгээний хязгаарт хүрлээ. Маргааш дахин оролдоно уу.",
+          { extensions: { code: "AI_MATCH_LIMIT_EXCEEDED" } },
+        );
+      }
+
+      await StudentProfile.updateOne(
+        { userId: context.user!.userId },
+        {
+          $set: {
+            aiMatchCount: aiMatchCount + 1,
+            aiMatchDate: isSameDay ? aiMatchDate : today,
+          },
+        },
+      );
+
       return getAIMatchScore(studentProfile, job);
     },
 

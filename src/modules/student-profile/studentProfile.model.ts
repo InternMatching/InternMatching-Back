@@ -69,6 +69,20 @@ const studentProfileSchema = new Schema<IStudentProfile>(
     cvParseDate: {
       type: Date,
     },
+    cvReviewCount: {
+      type: Number,
+      default: 0,
+    },
+    cvReviewDate: {
+      type: Date,
+    },
+    aiMatchCount: {
+      type: Number,
+      default: 0,
+    },
+    aiMatchDate: {
+      type: Date,
+    },
     updatedAt: {
       type: Date,
       default: Date.now,

@@ -77,6 +77,10 @@ export interface IStudentProfile {
   }[];
   cvParseCount?: number;
   cvParseDate?: Date;
+  cvReviewCount?: number;
+  cvReviewDate?: Date;
+  aiMatchCount?: number;
+  aiMatchDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
