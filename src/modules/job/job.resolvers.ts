@@ -166,19 +166,7 @@ export const jobResolvers = {
       if (parent.applicationCount !== undefined) return parent.applicationCount;
       return Application.countDocuments({ jobId: parent._id ?? parent.id });
     },
-    matchScore: async (parent: any, _: any, context: Context) => {
-      // Only compute for logged-in students
-      if (!context.user || context.user.role !== UserRole.STUDENT) return null;
-
-      // Cache student profile on context to avoid N+1 queries
-      if (!context._cachedStudentProfile) {
-        context._cachedStudentProfile = await StudentProfile.findOne({ userId: context.user.userId });
-      }
-      const studentProfile = context._cachedStudentProfile;
-      if (!studentProfile) return null;
-
-      return calculateMatchScore(studentProfile, parent, undefined, "student");
-    },
+    matchScore: () => null,
   },
 
   Mutation: {
