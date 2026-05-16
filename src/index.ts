@@ -3,6 +3,7 @@ import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import cors from "cors";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import { connectDatabase } from "./config/database.js";
 import { typeDefs } from "./graphql/typeDefs.js";
 import { resolvers } from "./graphql/resolvers.js";
@@ -110,12 +111,26 @@ async function startServer() {
     });
   });
 
-  // Health check endpoint
-  app.get("/health", (req, res) => {
-    res.status(200).json({
-      status: "OK",
+  // Health check endpoint — also pings Mongo so external keepalive hits
+  // keep the Atlas connection warm, not just the Render container.
+  app.get("/health", async (req, res) => {
+    let db: "ok" | "down" = "down";
+    let dbLatencyMs: number | null = null;
+    try {
+      const t0 = Date.now();
+      await mongoose.connection.db?.admin().ping();
+      dbLatencyMs = Date.now() - t0;
+      db = "ok";
+    } catch (err) {
+      console.error("[health] mongo ping failed:", err);
+    }
+
+    res.status(db === "ok" ? 200 : 503).json({
+      status: db === "ok" ? "OK" : "DEGRADED",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      db,
+      dbLatencyMs,
       allowedOrigins: FRONTEND_URLS,
       nodeEnv: process.env.NODE_ENV
     });
