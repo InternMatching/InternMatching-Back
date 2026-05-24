@@ -28,8 +28,8 @@ export const applicationResolvers = {
         });
       }
 
-      // Recompute live via the AI cache so a single-application fetch shows
-      // the same number as the list views.
+      // Read the cached AI score (stale-while-revalidate) so a single-fetch
+      // stays fast and matches what the list views show.
       let liveScore: number | null = null;
       try {
         const [student, job] = await Promise.all([
@@ -37,8 +37,8 @@ export const applicationResolvers = {
           Job.findById(application.jobId),
         ]);
         if (student && job) {
-          const result = await getOrComputeAIMatch(student as any, job as any);
-          liveScore = result.score;
+          const result = await getOrComputeAIMatch(student as any, job as any, "swr");
+          if (result) liveScore = result.score;
         }
       } catch (err) {
         console.warn("[getApplication] live score failed, using stored:", err);
@@ -219,13 +219,26 @@ export const applicationResolvers = {
 
       const companyProfile = await CompanyProfile.findById(job.companyProfileId);
 
-      // Use the shared AI cache so the stored score matches the one the
-      // student saw on the jobs list. Fall back to the keyword formula if
-      // Claude is unavailable so the apply flow never breaks.
+      // Read the cached AI score in SWR mode so the apply request doesn't
+      // block on Claude. If the cache is cold, store the keyword score as a
+      // seed — getAllApplications recomputes live anyway, so the stored value
+      // is just a fallback used when AI is unavailable.
       let matchScore: number;
       try {
-        const aiResult = await getOrComputeAIMatch(studentProfile as any, job as any);
-        matchScore = aiResult.score;
+        const aiResult = await getOrComputeAIMatch(
+          studentProfile as any,
+          job as any,
+          "swr",
+        );
+        matchScore = aiResult
+          ? aiResult.score
+          : calculateMatchScore(
+              studentProfile,
+              job,
+              coverLetter,
+              "company",
+              companyProfile?.industry,
+            );
       } catch (err) {
         console.warn("[createApplication] AI score failed, falling back to keyword score:", err);
         matchScore = calculateMatchScore(

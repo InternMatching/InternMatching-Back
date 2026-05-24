@@ -55,9 +55,15 @@ export const jobResolvers = {
         });
       }
 
-      // Cache handles abuse — no per-day rate limit needed. The cache invalidates
-      // whenever the student's profile or the job is edited.
-      return getOrComputeAIMatch(studentProfile, job);
+      // On-demand AI panel — wait for a fresh result so the strengths/gaps
+      // can't be stale right after the student edits their profile.
+      const result = await getOrComputeAIMatch(studentProfile, job, "wait");
+      if (!result) {
+        throw new GraphQLError("AI шинжилгээ боломжгүй байна.", {
+          extensions: { code: "AI_UNAVAILABLE" },
+        });
+      }
+      return result;
     },
 
     getJob: async (_: any, { id }: { id: string }, context: Context) => {
@@ -104,8 +110,8 @@ export const jobResolvers = {
       ]);
       const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
 
-      // For students, score every job with the cached AI matcher. Cache hits
-      // are instant; cache misses fire Claude in parallel and persist the result.
+      // For students, score every job via the cache. Stale-while-revalidate:
+      // returns whatever's in the cache instantly and refreshes in background.
       let scoreMap: Map<string, number | null> = new Map();
       let isStudent = false;
       if (context.user?.role === UserRole.STUDENT) {
