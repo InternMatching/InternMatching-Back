@@ -172,7 +172,7 @@ export const authResolvers = {
 
       // Validate input
       if (!email || !password) {
-        throw new GraphQLError("Email and password are required", {
+        throw new GraphQLError("И-мэйл болон нууц үгээ оруулна уу.", {
           extensions: { code: "BAD_REQUEST" },
         });
       }
@@ -183,7 +183,7 @@ export const authResolvers = {
       );
 
       if (!user) {
-        throw new GraphQLError("Invalid email or password", {
+        throw new GraphQLError("И-мэйл эсвэл нууц үг буруу байна.", {
           extensions: { code: "UNAUTHENTICATED" },
         });
       }
@@ -192,7 +192,7 @@ export const authResolvers = {
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        throw new GraphQLError("Invalid email or password", {
+        throw new GraphQLError("И-мэйл эсвэл нууц үг буруу байна.", {
           extensions: { code: "UNAUTHENTICATED" },
         });
       }

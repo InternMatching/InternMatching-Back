@@ -10,7 +10,10 @@ import {
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { calculateMatchScore } from "../../utils/matchScore/index.js";
-import { getAIMatchScore } from "../../utils/aiMatchScore.js";
+import {
+  getOrComputeAIMatch,
+  getOrComputeAIMatchBatch,
+} from "../../utils/aiMatchScoreCached.js";
 import { pushNotification } from "../../utils/pushNotification.js";
 import { NotificationType } from "../../types/index.js";
 
@@ -24,11 +27,29 @@ export const applicationResolvers = {
           extensions: { code: "NOT_FOUND" },
         });
       }
+
+      // Recompute live via the AI cache so a single-application fetch shows
+      // the same number as the list views.
+      let liveScore: number | null = null;
+      try {
+        const [student, job] = await Promise.all([
+          StudentProfile.findById(application.studentProfileId),
+          Job.findById(application.jobId),
+        ]);
+        if (student && job) {
+          const result = await getOrComputeAIMatch(student as any, job as any);
+          liveScore = result.score;
+        }
+      } catch (err) {
+        console.warn("[getApplication] live score failed, using stored:", err);
+      }
+
       return {
         ...application.toObject(),
         id: application._id.toString(),
         jobId: application.jobId.toString(),
         studentProfileId: application.studentProfileId.toString(),
+        matchScore: liveScore ?? application.matchScore,
         appliedAt: application.appliedAt.toISOString(),
       };
     },
@@ -52,7 +73,7 @@ export const applicationResolvers = {
       } else if (user.role === UserRole.COMPANY) {
         const companyProfile = await CompanyProfile.findOne({ userId: user.userId });
         if (!companyProfile) throw new GraphQLError("Company profile not found");
-        
+
         // If jobId is provided, verify it belongs to this company
         if (jobId) {
           const job = await Job.findById(jobId);
@@ -68,14 +89,78 @@ export const applicationResolvers = {
         }
       }
 
-      const applications = await Application.find(query).sort({ matchScore: -1, appliedAt: -1 });
-      return applications.map((app) => ({
-        ...app.toObject(),
-        id: app._id.toString(),
-        jobId: app.jobId.toString(),
-        studentProfileId: app.studentProfileId.toString(),
-        appliedAt: app.appliedAt.toISOString(),
-      }));
+      const applications = await Application.find(query);
+      if (applications.length === 0) return [];
+
+      // Recompute matchScore live via the AI cache so both the student's
+      // "Миний хүсэлтүүд" page and the company's "Оюутнуудын хүсэлт" page
+      // see the same number as the jobs list. Stale caches re-fire Claude;
+      // fresh ones return instantly.
+      const uniqueStudentIds = [
+        ...new Set(applications.map((a) => a.studentProfileId.toString())),
+      ];
+      const uniqueJobIds = [
+        ...new Set(applications.map((a) => a.jobId.toString())),
+      ];
+      const [studentDocs, jobDocs] = await Promise.all([
+        StudentProfile.find({ _id: { $in: uniqueStudentIds } }),
+        Job.find({ _id: { $in: uniqueJobIds } }),
+      ]);
+      const studentByApp = new Map(studentDocs.map((s) => [s._id.toString(), s]));
+      const jobByApp = new Map(jobDocs.map((j) => [j._id.toString(), j]));
+
+      // Group by student so we can use the batch helper (one cache lookup
+      // per student instead of N).
+      const grouped = new Map<string, { student: any; jobs: any[] }>();
+      for (const app of applications) {
+        const sid = app.studentProfileId.toString();
+        const jid = app.jobId.toString();
+        const student = studentByApp.get(sid);
+        const job = jobByApp.get(jid);
+        if (!student || !job) continue;
+        let bucket = grouped.get(sid);
+        if (!bucket) {
+          bucket = { student, jobs: [] };
+          grouped.set(sid, bucket);
+        }
+        if (!bucket.jobs.some((j) => j._id.toString() === jid)) {
+          bucket.jobs.push(job);
+        }
+      }
+
+      const scoreByPair = new Map<string, number | null>();
+      await Promise.all(
+        [...grouped.values()].map(async ({ student, jobs }) => {
+          const results = await getOrComputeAIMatchBatch(student, jobs);
+          for (const [jid, res] of results) {
+            scoreByPair.set(`${student._id.toString()}::${jid}`, res ? res.score : null);
+          }
+        }),
+      );
+
+      const enriched = applications.map((app) => {
+        const key = `${app.studentProfileId.toString()}::${app.jobId.toString()}`;
+        const live = scoreByPair.get(key);
+        // Fall back to stored value if AI scoring isn't available (no key,
+        // missing student/job, etc.).
+        const finalScore = typeof live === "number" ? live : app.matchScore;
+        return {
+          ...app.toObject(),
+          id: app._id.toString(),
+          jobId: app.jobId.toString(),
+          studentProfileId: app.studentProfileId.toString(),
+          matchScore: finalScore,
+          appliedAt: app.appliedAt.toISOString(),
+        };
+      });
+
+      enriched.sort((a, b) => {
+        const diff = (b.matchScore ?? -1) - (a.matchScore ?? -1);
+        if (diff !== 0) return diff;
+        return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
+      });
+
+      return enriched;
     },
   },
 
@@ -134,13 +219,22 @@ export const applicationResolvers = {
 
       const companyProfile = await CompanyProfile.findById(job.companyProfileId);
 
+      // Use the shared AI cache so the stored score matches the one the
+      // student saw on the jobs list. Fall back to the keyword formula if
+      // Claude is unavailable so the apply flow never breaks.
       let matchScore: number;
       try {
-        const aiResult = await getAIMatchScore(studentProfile, job);
+        const aiResult = await getOrComputeAIMatch(studentProfile as any, job as any);
         matchScore = aiResult.score;
       } catch (err) {
         console.warn("[createApplication] AI score failed, falling back to keyword score:", err);
-        matchScore = calculateMatchScore(studentProfile, job, coverLetter, "company", companyProfile?.industry);
+        matchScore = calculateMatchScore(
+          studentProfile,
+          job,
+          coverLetter,
+          "company",
+          companyProfile?.industry,
+        );
       }
 
       const application = await Application.create({

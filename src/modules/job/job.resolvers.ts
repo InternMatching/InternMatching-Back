@@ -10,8 +10,10 @@ import {
   UserRole
 } from "../../types/index.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
-import { calculateMatchScore } from "../../utils/matchScore/index.js";
-import { getAIMatchScore } from "../../utils/aiMatchScore.js";
+import {
+  getOrComputeAIMatch,
+  getOrComputeAIMatchBatch,
+} from "../../utils/aiMatchScoreCached.js";
 import { pushNotification } from "../../utils/pushNotification.js";
 import { NotificationType } from "../../types/index.js";
 
@@ -53,34 +55,9 @@ export const jobResolvers = {
         });
       }
 
-      const today = new Date();
-      const aiMatchDate = studentProfile.aiMatchDate;
-      const isSameDay =
-        aiMatchDate &&
-        aiMatchDate.getFullYear() === today.getFullYear() &&
-        aiMatchDate.getMonth() === today.getMonth() &&
-        aiMatchDate.getDate() === today.getDate();
-
-      const aiMatchCount = isSameDay ? (studentProfile.aiMatchCount ?? 0) : 0;
-
-      if (aiMatchCount >= 1) {
-        throw new GraphQLError(
-          "Өнөөдрийн AI шинжилгээний хязгаарт хүрлээ. Маргааш дахин оролдоно уу.",
-          { extensions: { code: "AI_MATCH_LIMIT_EXCEEDED" } },
-        );
-      }
-
-      await StudentProfile.updateOne(
-        { userId: context.user!.userId },
-        {
-          $set: {
-            aiMatchCount: aiMatchCount + 1,
-            aiMatchDate: isSameDay ? aiMatchDate : today,
-          },
-        },
-      );
-
-      return getAIMatchScore(studentProfile, job);
+      // Cache handles abuse — no per-day rate limit needed. The cache invalidates
+      // whenever the student's profile or the job is edited.
+      return getOrComputeAIMatch(studentProfile, job);
     },
 
     getJob: async (_: any, { id }: { id: string }, context: Context) => {
@@ -127,15 +104,38 @@ export const jobResolvers = {
       ]);
       const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
 
-      return jobs.map((job) => {
+      // For students, score every job with the cached AI matcher. Cache hits
+      // are instant; cache misses fire Claude in parallel and persist the result.
+      let scoreMap: Map<string, number | null> = new Map();
+      let isStudent = false;
+      if (context.user?.role === UserRole.STUDENT) {
+        const studentProfile = await StudentProfile.findOne({
+          userId: context.user.userId,
+        });
+        if (studentProfile) {
+          isStudent = true;
+          const aiResults = await getOrComputeAIMatchBatch(
+            studentProfile as any,
+            jobs as any,
+          );
+          for (const [jobId, result] of aiResults) {
+            scoreMap.set(jobId, result ? result.score : null);
+          }
+        }
+      }
+
+      const mapped = jobs.map((job) => {
         const company = companyMap.get(job.companyProfileId.toString()) || null;
+        const jobIdStr = job._id.toString();
+        const matchScore = isStudent ? scoreMap.get(jobIdStr) ?? null : null;
         return {
           ...job,
-          id: job._id.toString(),
+          id: jobIdStr,
           companyProfileId: job.companyProfileId.toString(),
           deadline: job.deadline?.toISOString(),
           postedAt: job.postedAt?.toISOString(),
-          applicationCount: countMap.get(job._id.toString()) || 0,
+          applicationCount: countMap.get(jobIdStr) || 0,
+          matchScore,
           company: company
             ? {
                 ...company,
@@ -145,6 +145,17 @@ export const jobResolvers = {
             : null,
         };
       });
+
+      if (isStudent) {
+        // Sort by AI score desc, with nulls last.
+        mapped.sort((a, b) => {
+          const aScore = a.matchScore ?? -1;
+          const bScore = b.matchScore ?? -1;
+          return bScore - aScore;
+        });
+      }
+
+      return mapped;
     },
   },
 
@@ -166,7 +177,8 @@ export const jobResolvers = {
       if (parent.applicationCount !== undefined) return parent.applicationCount;
       return Application.countDocuments({ jobId: parent._id ?? parent.id });
     },
-    matchScore: () => null,
+    matchScore: (parent: any) =>
+      typeof parent.matchScore === "number" ? parent.matchScore : null,
   },
 
   Mutation: {
